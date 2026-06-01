@@ -103,6 +103,19 @@ DEFAULT_CS_QUESTIONS = {
     ]
 }
 
+def get_progress_response(progress: CodingProgress) -> dict:
+    from app.config.dsa_youtube_defaults import DEFAULT_DSA_YOUTUBE_LINKS
+    res = progress.model_dump()
+    res["id"] = str(progress.id)
+    res["user_id"] = str(progress.user_id)
+    
+    # Merge custom user links on top of the pre-populated official links
+    merged = DEFAULT_DSA_YOUTUBE_LINKS.copy()
+    if progress.dsa_youtube_links:
+        merged.update(progress.dsa_youtube_links)
+    res["dsa_youtube_links"] = merged
+    return res
+
 @router.get("/progress")
 async def get_progress(user: User = Depends(get_current_user)):
     progress = await CodingProgress.find_one(CodingProgress.user_id == user.id)
@@ -156,10 +169,7 @@ async def get_progress(user: User = Depends(get_current_user)):
         if need_save:
             await progress.save()
         
-    res = progress.model_dump()
-    res["id"] = str(progress.id)
-    res["user_id"] = str(progress.user_id)
-    return res
+    return get_progress_response(progress)
 
 @router.put("/usernames")
 async def update_usernames(data: UsernamesSchema, user: User = Depends(get_current_user)):
@@ -193,9 +203,7 @@ async def sync_stats(user: User = Depends(get_current_user)):
     # Trigger placement score update
     await PlacementService.create_or_update_placement_score(user.id, progress)
     
-    res = progress.model_dump()
-    res["id"] = str(progress.id)
-    res["user_id"] = str(progress.user_id)
+    res = get_progress_response(progress)
     return {"message": "Coding stats synced successfully", "progress": res}
 
 @router.post("/dsa")
