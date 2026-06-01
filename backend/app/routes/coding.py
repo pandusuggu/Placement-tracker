@@ -44,6 +44,10 @@ class RegenerateQuestionsSchema(BaseModel):
 class RegenerateAptitudeQuestionsSchema(BaseModel):
     topic: str  # "Quantitative Aptitude", "Logical Reasoning", "Verbal Ability"
 
+class DSAYoutubeLinkUpdateSchema(BaseModel):
+    question_id: str
+    youtube_link: str
+
 DEFAULT_APTITUDE_QUESTIONS = {
     "Quantitative Aptitude": [
         "Solve Percentages Problems (Arithmetic Section) || https://www.indiabix.com/aptitude/percentage/",
@@ -345,3 +349,16 @@ async def regenerate_aptitude_questions(data: RegenerateAptitudeQuestionsSchema,
         "questions": new_qs,
         "progress": 0.0
     }
+
+@router.post("/dsa/youtube")
+async def update_dsa_youtube_link(data: DSAYoutubeLinkUpdateSchema, user: User = Depends(get_current_user)):
+    progress = await CodingProgress.find_one(CodingProgress.user_id == user.id)
+    if not progress:
+        raise HTTPException(status_code=404, detail="Progress record not found")
+        
+    if progress.dsa_youtube_links is None:
+        progress.dsa_youtube_links = {}
+        
+    progress.dsa_youtube_links[data.question_id] = data.youtube_link
+    await progress.save()
+    return {"message": f"YouTube link for question '{data.question_id}' updated successfully"}

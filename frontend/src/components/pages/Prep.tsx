@@ -4,7 +4,7 @@ import {
   Sliders, ChevronDown, ChevronUp, Flame, ExternalLink,
   Plus, FolderOpen, FileText, Kanban, ArrowUpRight, Check, Calendar, Star,
   Activity, Clock, Award as AwardIcon, CheckSquare as CheckSquareIcon, Trash2,
-  Brain, X, UploadCloud, AlertTriangle, Sparkles
+  Brain, X, UploadCloud, AlertTriangle, Sparkles, Youtube, Edit
 } from 'lucide-react'
 import api from '../../services/api'
 import { DSA_QUESTIONS } from './neetcodeQuestions'
@@ -305,6 +305,7 @@ export const Prep: React.FC = () => {
   const [expandedBlindCategory, setExpandedBlindCategory] = useState<string | null>("Fundamentals")
   const [expandedBlindTopic, setExpandedBlindTopic] = useState<string | null>(null)
   const [completedQuestions, setCompletedQuestions] = useState<Record<string, boolean>>({})
+  const [youtubeLinks, setYoutubeLinks] = useState<Record<string, string>>({})
   const [expandedCoreSubject, setExpandedCoreSubject] = useState<string | null>(null)
   const [expandedAptitudeTopic, setExpandedAptitudeTopic] = useState<string | null>(null)
   const [generatingAptitudeTopic, setGeneratingAptitudeTopic] = useState<string | null>(null)
@@ -648,6 +649,10 @@ export const Prep: React.FC = () => {
         })
       }
       setCompletedQuestions(dbCompleted)
+      
+      if (res.data.dsa_youtube_links) {
+        setYoutubeLinks(res.data.dsa_youtube_links)
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -688,6 +693,29 @@ export const Prep: React.FC = () => {
       console.error(e)
     } finally {
       setSyncing(false)
+    }
+  }
+
+  const handleSaveYoutubeLink = async (questionId: string, url: string) => {
+    try {
+      const cleanUrl = url.trim();
+      if (cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+        alert("Please enter a valid URL starting with http:// or https://");
+        return;
+      }
+
+      await api.post('/api/coding/dsa/youtube', {
+        question_id: questionId,
+        youtube_link: cleanUrl
+      });
+
+      setYoutubeLinks(prev => ({
+        ...prev,
+        [questionId]: cleanUrl
+      }));
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save YouTube link.");
     }
   }
 
@@ -1434,6 +1462,47 @@ export const Prep: React.FC = () => {
                                           >
                                             <Brain size={12} />
                                           </button>
+
+                                          {/* YouTube Link Toggle/View */}
+                                          {youtubeLinks[q.id] ? (
+                                            <div className="flex items-center">
+                                              <a 
+                                                href={youtubeLinks[q.id]}
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="p-1 hover:bg-red-500/10 rounded text-red-500 transition-all flex items-center justify-center"
+                                                title="Watch YouTube Solution"
+                                              >
+                                                <Youtube size={12} />
+                                              </a>
+                                              <button
+                                                onClick={() => {
+                                                  const newLink = prompt("Edit YouTube solution link for this question:", youtubeLinks[q.id])
+                                                  if (newLink !== null) {
+                                                    handleSaveYoutubeLink(q.id, newLink)
+                                                  }
+                                                }}
+                                                className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all"
+                                                title="Edit YouTube link"
+                                              >
+                                                <Edit size={10} />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <button
+                                              onClick={() => {
+                                                const newLink = prompt("Add YouTube solution link for this question:")
+                                                if (newLink !== null) {
+                                                  handleSaveYoutubeLink(q.id, newLink)
+                                                }
+                                              }}
+                                              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-red-500 transition-all flex items-center justify-center"
+                                              title="Add YouTube Solution Link"
+                                            >
+                                              <Youtube size={12} />
+                                            </button>
+                                          )}
+
                                           <a 
                                             href={q.link}
                                             target="_blank" 
@@ -1596,6 +1665,47 @@ export const Prep: React.FC = () => {
                                           >
                                             <Brain size={12} />
                                           </button>
+
+                                          {/* YouTube Link Toggle/View */}
+                                          {youtubeLinks[q.id] ? (
+                                            <div className="flex items-center">
+                                              <a 
+                                                href={youtubeLinks[q.id]}
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="p-1 hover:bg-red-500/10 rounded text-red-500 transition-all flex items-center justify-center"
+                                                title="Watch YouTube Solution"
+                                              >
+                                                <Youtube size={12} />
+                                              </a>
+                                              <button
+                                                onClick={() => {
+                                                  const newLink = prompt("Edit YouTube solution link for this question:", youtubeLinks[q.id])
+                                                  if (newLink !== null) {
+                                                    handleSaveYoutubeLink(q.id, newLink)
+                                                  }
+                                                }}
+                                                className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all"
+                                                title="Edit YouTube link"
+                                              >
+                                                <Edit size={10} />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <button
+                                              onClick={() => {
+                                                const newLink = prompt("Add YouTube solution link for this question:")
+                                                if (newLink !== null) {
+                                                  handleSaveYoutubeLink(q.id, newLink)
+                                                }
+                                              }}
+                                              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-red-500 transition-all flex items-center justify-center"
+                                              title="Add YouTube Solution Link"
+                                            >
+                                              <Youtube size={12} />
+                                            </button>
+                                          )}
+
                                           <a 
                                             href={q.link}
                                             target="_blank" 

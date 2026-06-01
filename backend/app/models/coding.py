@@ -25,6 +25,9 @@ class CodingProgress(Document):
     # DSA Roadmaps Progress: {"Arrays": "completed", "Strings": "in-progress", ...}
     dsa_progress: Dict[str, str] = Field(default_factory=dict) 
     
+    # Youtube links for DSA questions: {"two-sum": "https://www.youtube.com/watch?v=..."}
+    dsa_youtube_links: Dict[str, str] = Field(default_factory=dict)
+    
     # Core Subjects: {"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0}
     core_subjects_progress: Dict[str, float] = Field(default_factory=dict)
     
