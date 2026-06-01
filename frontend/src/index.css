@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased transition-colors duration-200;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+  }
+}
+
+/* Premium Web App Utilities */
+.glass-card {
+  @apply bg-card-light/80 dark:bg-card-dark/80 backdrop-blur-md border border-border-light dark:border-border-dark shadow-glass-light dark:shadow-glass-dark rounded-2xl;
+}
+
+.glass-input {
+  @apply w-full bg-slate-100/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-2.5 outline-none transition-all duration-200 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600;
+}
+
+/* Beautiful neon glow highlights for student stats */
+.glow-emerald {
+  box-shadow: 0 0 20px 0 rgba(16, 185, 129, 0.2);
+}
+
+.glow-blue {
+  box-shadow: 0 0 20px 0 rgba(59, 130, 246, 0.2);
+}
+
+.glow-violet {
+  box-shadow: 0 0 20px 0 rgba(139, 92, 246, 0.2);
+}
+
+.glow-rose {
+  box-shadow: 0 0 20px 0 rgba(244, 63, 94, 0.2);
+}
+
+/* Smooth customized scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-slate-800 rounded-full hover:bg-slate-400 dark:hover:bg-slate-700;
+}
+
+/* Animation presets for dashboard widgets */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+/* GitHub Heatmap Grid squares */
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+}
