@@ -147,7 +147,7 @@ export const AICoach: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 p-8 space-y-8 max-w-7xl mx-auto w-[calc(100%-16rem)] ml-64 min-h-screen">
+    <div className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full min-h-screen">
       
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border-light dark:border-border-dark">

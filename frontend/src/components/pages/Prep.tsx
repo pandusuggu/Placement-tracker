@@ -1003,7 +1003,7 @@ export const Prep: React.FC = () => {
   const recommendedTopic = getNextRecommendedTopic()
 
   return (
-    <div className="flex-1 p-4 md:p-8 space-y-8 max-w-6xl mx-auto w-[calc(100%-16rem)] ml-64 min-h-screen">
+    <div className="flex-1 p-4 md:p-8 space-y-8 max-w-6xl mx-auto w-full min-h-screen">
       
       {/* Page Title & Main Sync Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border-light dark:border-border-dark pb-6">

@@ -24,6 +24,7 @@ export const App: React.FC = () => {
   
   // Manage tabs internally to avoid routing friction on local previews
   const [currentTab, setCurrentTab] = useState('dashboard')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     initTheme()
@@ -62,12 +63,29 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark flex text-slate-800 dark:text-slate-200 transition-colors duration-300">
+      {/* Mobile backdrop overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-slate-900/50 dark:bg-slate-950/60 backdrop-blur-sm z-25 transition-opacity duration-300"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Navigation Panels */}
-      <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} />
+      <Sidebar 
+        currentTab={currentTab} 
+        setCurrentTab={setCurrentTab} 
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      />
       
       {/* Workspace Area */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
-        <Header currentTab={currentTab} setCurrentTab={setCurrentTab} />
+      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden lg:pl-64">
+        <Header 
+          currentTab={currentTab} 
+          setCurrentTab={setCurrentTab} 
+          setSidebarOpen={setSidebarOpen}
+        />
         
         <main className="flex-1 flex flex-col">
           {renderTabContent()}

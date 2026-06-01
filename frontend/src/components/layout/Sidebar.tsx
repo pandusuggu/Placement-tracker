@@ -10,16 +10,19 @@ import {
   BookOpen, 
   LogOut,
   ChevronRight,
-  Compass
+  Compass,
+  X
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 
 interface SidebarProps {
   currentTab: string
   setCurrentTab: (tab: string) => void
+  sidebarOpen: boolean
+  setSidebarOpen: (open: boolean) => void
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, sidebarOpen, setSidebarOpen }) => {
   const { logout, user } = useAuthStore()
 
   const navItems = [
@@ -35,17 +38,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
   ]
 
   return (
-    <aside className="w-64 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark flex flex-col h-screen fixed left-0 top-0 z-30 transition-all duration-300">
+    <aside className={`w-64 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark flex flex-col h-screen fixed top-0 bottom-0 left-0 z-30 transition-all duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Brand Header */}
-      <div className="p-6 border-b border-border-light dark:border-border-dark flex items-center gap-3">
-        <div className="w-9 h-9 bg-primary dark:bg-primary-dark rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-blue font-sans">
-          C
+      <div className="p-6 border-b border-border-light dark:border-border-dark flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-primary dark:bg-primary-dark rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-blue font-sans">
+            C
+          </div>
+          <div>
+            <h1 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 tracking-tight font-sans">
+              CodePilot <span className="text-primary font-bold text-sm bg-primary/10 px-1.5 py-0.5 rounded">AI</span>
+            </h1>
+          </div>
         </div>
-        <div>
-          <h1 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 tracking-tight font-sans">
-            CodePilot <span className="text-primary font-bold text-sm bg-primary/10 px-1.5 py-0.5 rounded">AI</span>
-          </h1>
-        </div>
+        
+        {/* Mobile close button */}
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="lg:hidden p-1.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       {/* Nav Links */}
@@ -56,7 +69,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
           return (
             <button
               key={item.id}
-              onClick={() => setCurrentTab(item.id)}
+              onClick={() => {
+                setCurrentTab(item.id)
+                setSidebarOpen(false)
+              }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                 isActive 
                   ? 'bg-primary text-white shadow-blue scale-[1.02]' 

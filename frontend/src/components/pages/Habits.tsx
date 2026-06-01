@@ -129,7 +129,7 @@ export const Habits: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 p-8 space-y-8 max-w-5xl mx-auto w-[calc(100%-16rem)] ml-64 min-h-screen">
+    <div className="flex-1 p-4 md:p-8 space-y-8 max-w-5xl mx-auto w-full min-h-screen">
       
       {/* 1. Header with stats summaries */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

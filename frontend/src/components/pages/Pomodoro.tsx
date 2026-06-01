@@ -142,7 +142,7 @@ export const Pomodoro: React.FC = () => {
   const strokeDashoffset = total > 0 ? ((total - timeLeft) / total) * 282.6 : 0
 
   return (
-    <div className="flex-1 p-8 space-y-8 max-w-5xl mx-auto w-[calc(100%-16rem)] ml-64 min-h-screen">
+    <div className="flex-1 p-4 md:p-8 space-y-8 max-w-5xl mx-auto w-full min-h-screen">
       
       {/* Split visual column */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

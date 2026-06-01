@@ -183,7 +183,7 @@ export const Dashboard: React.FC = () => {
   }) || []
 
   return (
-    <div className="flex-1 p-8 space-y-8 max-w-7xl mx-auto w-[calc(100%-16rem)] ml-64 min-h-screen">
+    <div className="flex-1 p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full min-h-screen">
       
       {/* 1. Header Grid Metrics (4 glow cards) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
