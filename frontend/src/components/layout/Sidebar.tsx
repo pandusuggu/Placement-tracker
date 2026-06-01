@@ -42,13 +42,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, sid
       {/* Brand Header */}
       <div className="p-6 border-b border-border-light dark:border-border-dark flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-primary dark:bg-primary-dark rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-blue font-sans">
-            C
+          <div className="w-9 h-9 bg-primary dark:bg-primary-dark rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-blue font-sans select-none shrink-0">
+            P
           </div>
-          <div>
-            <h1 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 tracking-tight font-sans">
-              CodePilot <span className="text-primary font-bold text-sm bg-primary/10 px-1.5 py-0.5 rounded">AI</span>
+          <div className="overflow-hidden">
+            <h1 className="font-extrabold text-sm text-slate-800 dark:text-slate-100 tracking-tight font-sans leading-tight">
+              Placement Tracker
             </h1>
+            <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider truncate">
+              Productivity Planner
+            </p>
           </div>
         </div>
         

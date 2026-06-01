@@ -15,14 +15,14 @@ logger = logging.getLogger("codepilot")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup Database Connection
-    logger.info("Starting up CodePilot AI FastAPI Server...")
+    logger.info("Starting up Placement Tracker & Productivity Planner FastAPI Server...")
     await init_db()
     yield
     # Shutdown logic if any
-    logger.info("Shutting down CodePilot AI FastAPI Server...")
+    logger.info("Shutting down Placement Tracker & Productivity Planner FastAPI Server...")
 
 app = FastAPI(
-    title="CodePilot AI API",
+    title="Placement Tracker & Productivity Planner API",
     description="Productivity, routine tracking, habit tracking, coding tracker, and placement preparation assistant.",
     version="1.0.0",
     lifespan=lifespan
@@ -61,7 +61,7 @@ app.include_router(analytics.router)
 def read_root():
     return {
         "status": "online",
-        "app": "CodePilot AI API Server",
+        "app": "Placement Tracker & Productivity Planner API Server",
         "version": "1.0.0",
         "docs": "/docs"
     }

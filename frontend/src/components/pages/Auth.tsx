@@ -74,10 +74,10 @@ export const Auth: React.FC = () => {
         {/* Core Header logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl shadow-blue mb-4">
-            C
+            P
           </div>
-          <h1 className="font-extrabold text-2xl tracking-tight text-slate-800 dark:text-slate-100">
-            Welcome to CodePilot AI
+          <h1 className="font-extrabold text-xl tracking-tight text-slate-800 dark:text-slate-100 text-center">
+            Welcome to Placement Tracker & Productivity Planner
           </h1>
           <p className="text-sm text-slate-500 mt-1.5 text-center px-4">
             AI-powered productivity, routines, habit scheduler, and placement prep coach.
@@ -217,7 +217,7 @@ export const Auth: React.FC = () => {
               </button>
             ) : isLogin ? (
               <p className="text-slate-500">
-                New to CodePilot?{' '}
+                New to Placement Tracker?{' '}
                 <button
                   onClick={() => setIsLogin(false)}
                   className="text-primary font-bold hover:underline"

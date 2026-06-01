@@ -53,7 +53,7 @@ class SchedulerService:
             notif = Notification(
                 user_id=user_id,
                 title="Task Smart-Rescheduled ⏳",
-                message=f"'{task.title}' was overdue. CodePilot has automatically moved it to today and set priority to '{task.priority.upper()}'.",
+                message=f"'{task.title}' was overdue. Placement Tracker has automatically moved it to today and set priority to '{task.priority.upper()}'.",
                 notification_type="alert"
             )
             await notif.create()
