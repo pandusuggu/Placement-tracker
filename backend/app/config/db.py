@@ -24,8 +24,8 @@ async def init_db():
         # Monkeypatch AsyncIOMotorClient to avoid compatibility issue with Beanie / Motor 3.x
         AsyncIOMotorClient.append_metadata = lambda self, *args, **kwargs: None
         
-        # Create Motor client
-        client = AsyncIOMotorClient(settings.mongodb_uri)
+        # Create Motor client with 5s timeout to prevent hanging on bad connections
+        client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
         
         # Get default database name from URI or default to "codepilot"
         db_name = settings.mongodb_uri.split("/")[-1].split("?")[0]
