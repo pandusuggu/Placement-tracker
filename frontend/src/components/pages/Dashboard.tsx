@@ -69,6 +69,7 @@ export const Dashboard: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [coach, setCoach] = useState<CoachDiagnostic | null>(null)
   const [placement, setPlacement] = useState<PlacementScore | null>(null)
+  const [codingProgress, setCodingProgress] = useState<any>(null)
   
   const [loading, setLoading] = useState(true)
   const [generatingChallenge, setGeneratingChallenge] = useState(false)
@@ -82,18 +83,20 @@ export const Dashboard: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [tasksRes, habitsRes, analyticsRes, coachRes, placementRes] = await Promise.all([
+      const [tasksRes, habitsRes, analyticsRes, coachRes, placementRes, codingRes] = await Promise.all([
         api.get('/api/tasks?status=pending'),
         api.get('/api/habits'),
         api.get('/api/analytics'),
         api.get('/api/coach/diagnostic'),
-        api.get('/api/placement/readiness')
+        api.get('/api/placement/readiness'),
+        api.get('/api/coding/progress')
       ])
       setTasks(tasksRes.data)
       setHabits(habitsRes.data)
       setAnalytics(analyticsRes.data)
       setCoach(coachRes.data)
       setPlacement(placementRes.data)
+      setCodingProgress(codingRes.data)
     } catch (e) {
       console.error(e)
     } finally {
@@ -216,12 +219,12 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-4xl font-extrabold text-slate-800 dark:text-slate-100 font-sans">
-              {analytics?.daily_chart?.[analytics.daily_chart.length - 1]?.coding_solved || 0}
+              {codingProgress?.current_streak || 0}
             </span>
-            <span className="text-xs font-bold text-slate-400">problems today</span>
+            <span className="text-xs font-bold text-slate-400">days streak</span>
           </div>
           <div className="text-xs text-slate-400 mt-2 font-medium">
-            Leetcode profiles sync active.
+            {analytics?.daily_chart?.[analytics.daily_chart.length - 1]?.coding_solved || 0} problems solved today.
           </div>
         </div>
 

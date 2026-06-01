@@ -125,7 +125,12 @@ class CodingService:
             # Calculate daily difference
             old_total = progress.easy_solved + progress.medium_solved + progress.hard_solved
             new_total = total_easy + total_medium + total_hard
-            diff = max(new_total - old_total, 0)
+            
+            # If it's the first sync, don't count existing solved as solved today
+            if old_total == 0:
+                diff = 0
+            else:
+                diff = max(new_total - old_total, 0)
 
             progress.easy_solved = total_easy
             progress.medium_solved = total_medium
