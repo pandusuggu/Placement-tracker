@@ -9,6 +9,7 @@ import {
 import api from '../../services/api'
 import { DSA_QUESTIONS } from './neetcodeQuestions'
 import { BLIND75_QUESTIONS } from './blind75Questions'
+import { DEFAULT_DSA_YOUTUBE_LINKS } from './dsaYoutubeDefaults'
 
 interface Project {
   name: string
@@ -305,7 +306,7 @@ export const Prep: React.FC = () => {
   const [expandedBlindCategory, setExpandedBlindCategory] = useState<string | null>("Fundamentals")
   const [expandedBlindTopic, setExpandedBlindTopic] = useState<string | null>(null)
   const [completedQuestions, setCompletedQuestions] = useState<Record<string, boolean>>({})
-  const [youtubeLinks, setYoutubeLinks] = useState<Record<string, string>>({})
+  const [youtubeLinks, setYoutubeLinks] = useState<Record<string, string>>(DEFAULT_DSA_YOUTUBE_LINKS)
   const [expandedCoreSubject, setExpandedCoreSubject] = useState<string | null>(null)
   const [expandedAptitudeTopic, setExpandedAptitudeTopic] = useState<string | null>(null)
   const [generatingAptitudeTopic, setGeneratingAptitudeTopic] = useState<string | null>(null)
@@ -650,9 +651,11 @@ export const Prep: React.FC = () => {
       }
       setCompletedQuestions(dbCompleted)
       
-      if (res.data.dsa_youtube_links) {
-        setYoutubeLinks(res.data.dsa_youtube_links)
+      const mergedLinks = {
+        ...DEFAULT_DSA_YOUTUBE_LINKS,
+        ...(res.data.dsa_youtube_links || {})
       }
+      setYoutubeLinks(mergedLinks)
     } catch (e) {
       console.error(e)
     } finally {
