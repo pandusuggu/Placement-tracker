@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageSquare, Send, Users, Shield, Trash2, Clock } from 'lucide-react'
-
+import { MessageSquare, Send, Users, Shield, Trash2, Clock, ArrowLeft } from 'lucide-react'
 import api, { API_URL } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 
@@ -9,11 +8,14 @@ interface ChatMessageItem {
   user_id: string
   user_name: string
   user_role: string
+  recipient_id?: string | null
+  recipient_name?: string | null
   message: string
   created_at: string
 }
 
 interface ActiveUserItem {
+  id: string
   name: string
   role: string
   college: string
@@ -30,22 +32,33 @@ export const Community: React.FC = () => {
   const [messageText, setMessageText] = useState('')
   const [sending, setSending] = useState(false)
   const [wsConnected, setWsConnected] = useState(false)
+  const [activeChat, setActiveChat] = useState<'global' | ActiveUserItem>('global')
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
 
   const messageEndRef = useRef<HTMLDivElement>(null)
+  const activeChatRef = useRef<'global' | ActiveUserItem>('global')
 
+  // Keep ref in sync so WS callbacks always read the current active chat room
+  useEffect(() => {
+    activeChatRef.current = activeChat
+  }, [activeChat])
 
   const getWebSocketUrl = () => {
     const token = useAuthStore.getState().token || ''
-    // Convert http/https to ws/wss
     let wsUrl = API_URL.replace(/^http/, 'ws')
     return `${wsUrl}/api/chat/ws?token=${token}`
   }
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (chatTarget: 'global' | ActiveUserItem) => {
     try {
       setLoading(true)
-      const res = await api.get('/api/chat/history')
-      setMessages(res.data)
+      if (chatTarget === 'global') {
+        const res = await api.get('/api/chat/history')
+        setMessages(res.data)
+      } else {
+        const res = await api.get(`/api/chat/private/history/${chatTarget.id}`)
+        setMessages(res.data)
+      }
     } catch (err) {
       console.error('Failed to fetch chat history:', err)
     } finally {
@@ -53,10 +66,15 @@ export const Community: React.FC = () => {
     }
   }
 
-  const fetchHistorySilent = async () => {
+  const fetchHistorySilent = async (chatTarget: 'global' | ActiveUserItem) => {
     try {
-      const res = await api.get('/api/chat/history')
-      setMessages(res.data)
+      if (chatTarget === 'global') {
+        const res = await api.get('/api/chat/history')
+        setMessages(res.data)
+      } else {
+        const res = await api.get(`/api/chat/private/history/${chatTarget.id}`)
+        setMessages(res.data)
+      }
     } catch (err) {
       console.error('Failed to fetch chat history silently:', err)
     }
@@ -65,7 +83,9 @@ export const Community: React.FC = () => {
   const fetchActiveUsers = async () => {
     try {
       const res = await api.get('/api/chat/active')
-      setOnlineUsers(res.data)
+      // Exclude self from online listing so they can't chat with themselves
+      const filtered = res.data.filter((u: any) => u.id !== user?.id)
+      setOnlineUsers(filtered)
     } catch (err) {
       console.error('Failed to fetch active users:', err)
     }
@@ -77,7 +97,11 @@ export const Community: React.FC = () => {
 
     setSending(true)
     try {
-      await api.post('/api/chat/send', { message: messageText.trim() })
+      const payload: any = { message: messageText.trim() }
+      if (activeChat !== 'global') {
+        payload.recipient_id = activeChat.id
+      }
+      await api.post('/api/chat/send', payload)
       setMessageText('')
     } catch (err) {
       console.error('Failed to send message:', err)
@@ -91,7 +115,11 @@ export const Community: React.FC = () => {
     if (sending) return
     setSending(true)
     try {
-      await api.post('/api/chat/send', { message: emoji })
+      const payload: any = { message: emoji }
+      if (activeChat !== 'global') {
+        payload.recipient_id = activeChat.id
+      }
+      await api.post('/api/chat/send', payload)
     } catch (err) {
       console.error('Failed to send emoji message:', err)
     } finally {
@@ -113,13 +141,21 @@ export const Community: React.FC = () => {
     }
   }
 
+  const handleSwitchChat = (target: 'global' | ActiveUserItem) => {
+    setActiveChat(target)
+    if (target !== 'global') {
+      setUnreadCounts(prev => ({ ...prev, [target.id]: 0 }))
+    }
+    fetchHistory(target)
+  }
+
   const scrollToBottom = () => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // Initial load
+  // Load online users and active room history
   useEffect(() => {
-    fetchHistory()
+    fetchHistory(activeChat)
     fetchActiveUsers()
   }, [])
 
@@ -140,7 +176,6 @@ export const Community: React.FC = () => {
         ws = new WebSocket(wsUrl)
 
         ws.onopen = () => {
-
           setWsConnected(true)
           console.log('Community Chat WebSocket connected.')
           if (fallbackInterval) {
@@ -152,19 +187,38 @@ export const Community: React.FC = () => {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data)
+            const activeRoom = activeChatRef.current
+
             if (data.type === 'message') {
-              setMessages(prev => {
-                // Deduplicate
-                if (prev.some(m => m.id === data.id)) return prev
-                return [...prev, {
-                  id: data.id,
-                  user_id: data.user_id,
-                  user_name: data.user_name,
-                  user_role: data.user_role,
-                  message: data.message,
-                  created_at: data.created_at
-                }]
-              })
+              const isGlobalMessage = !data.recipient_id
+              
+              if (isGlobalMessage) {
+                // If currently viewing global room, add message
+                if (activeRoom === 'global') {
+                  setMessages(prev => {
+                    if (prev.some(m => m.id === data.id)) return prev
+                    return [...prev, data]
+                  })
+                }
+              } else {
+                // Private message
+                const isFromActiveParticipant = activeRoom !== 'global' && (data.user_id === activeRoom.id || data.recipient_id === activeRoom.id)
+                
+                if (isFromActiveParticipant) {
+                  setMessages(prev => {
+                    if (prev.some(m => m.id === data.id)) return prev
+                    return [...prev, data]
+                  })
+                } else {
+                  // Message is for us, increment unread count for the sender
+                  if (data.recipient_id === user?.id) {
+                    setUnreadCounts(prev => ({
+                      ...prev,
+                      [data.user_id]: (prev[data.user_id] || 0) + 1
+                    }))
+                  }
+                }
+              }
             } else if (data.type === 'delete') {
               setMessages(prev => prev.filter(m => m.id !== data.id))
             }
@@ -193,13 +247,13 @@ export const Community: React.FC = () => {
     const startFallbackPolling = () => {
       if (fallbackInterval) return
       fallbackInterval = setInterval(() => {
-        fetchHistorySilent()
+        fetchHistorySilent(activeChatRef.current)
         fetchActiveUsers()
       }, 4000)
     }
 
     connectWS()
-    startFallbackPolling() // Running concurrently for high reliability
+    startFallbackPolling()
 
     return () => {
       if (ws) {
@@ -213,7 +267,6 @@ export const Community: React.FC = () => {
 
   const formatMessageTime = (dateStr: string) => {
     try {
-      // Safe naive UTC to Local parser
       let cleanStr = dateStr.replace(' ', 'T')
       if (!cleanStr.endsWith('Z') && !cleanStr.includes('+') && !/[-+]\d{2}:?\d{2}$/.test(cleanStr)) {
         cleanStr += 'Z'
@@ -261,17 +314,47 @@ export const Community: React.FC = () => {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[450px]">
         {/* Left: Chat Stream Column */}
         <div className="lg:col-span-3 glass-card border-slate-200 dark:border-slate-800/80 flex flex-col overflow-hidden h-[60vh] lg:h-[calc(100vh-16rem)] min-h-[400px]">
+          
+          {/* Chat Stream Sub-Header (Tracks active target room) */}
+          <div className="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/20 shrink-0">
+            <div className="flex items-center gap-3">
+              {activeChat !== 'global' && (
+                <button
+                  onClick={() => handleSwitchChat('global')}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-xl transition-all"
+                  title="Back to Global Room"
+                >
+                  <ArrowLeft size={16} />
+                </button>
+              )}
+              <div>
+                <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
+                  {activeChat === 'global' ? 'Global Community Chat Room' : `Private Chat: ${activeChat.name}`}
+                </h4>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {activeChat === 'global' 
+                    ? 'Everyone in the workspace can view and send messages here'
+                    : `Secure private conversation with ${activeChat.name} (${activeChat.target_role})`}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Scrollable Message Box */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-            {loading && messages.length === 0 ? (
+            {loading ? (
               <div className="flex flex-col items-center justify-center h-full space-y-2">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <span className="text-xs text-slate-500">Loading chat history...</span>
+                <span className="text-xs text-slate-500">Loading messages...</span>
               </div>
             ) : messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center space-y-2 text-slate-400 dark:text-slate-600">
                 <MessageSquare size={36} />
-                <p className="text-xs font-bold">No messages in this chat yet. Start the conversation!</p>
+                <p className="text-xs font-bold">
+                  {activeChat === 'global'
+                    ? 'No messages in this chat yet. Start the conversation!'
+                    : `No private messages exchanged with ${activeChat.name} yet. Send a greeting!`}
+                </p>
               </div>
             ) : (
               messages.map((msg) => {
@@ -367,7 +450,7 @@ export const Community: React.FC = () => {
           <form onSubmit={handleSendMessage} className="p-4 border-t border-border-light dark:border-border-dark shrink-0 flex items-center gap-3 bg-card-light dark:bg-card-dark">
             <input
               type="text"
-              placeholder="Type your message here..."
+              placeholder={activeChat === 'global' ? 'Broadcast a message to everyone...' : `Send a private message to ${activeChat.name}...`}
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               disabled={sending}
@@ -392,35 +475,76 @@ export const Community: React.FC = () => {
           </h3>
 
           <div className="flex-1 overflow-y-auto pt-3 space-y-3">
-            {onlineUsers.map((item, idx) => {
+            {/* Switch to Global Chat Room */}
+            <div 
+              onClick={() => handleSwitchChat('global')}
+              className={`flex items-center gap-3 p-1.5 rounded-xl cursor-pointer transition-all border border-transparent ${
+                activeChat === 'global' 
+                  ? 'bg-primary/10 border-primary/20 text-slate-800 dark:text-slate-100'
+                  : 'hover:bg-slate-50/50 dark:hover:bg-slate-900/30'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center font-bold text-xs text-primary shrink-0 select-none">
+                G
+              </div>
+              <div className="overflow-hidden">
+                <h5 className="font-extrabold text-slate-800 dark:text-slate-200 text-[11px] truncate">
+                  Global Chat Room
+                </h5>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                  Public Broadcast
+                </p>
+              </div>
+            </div>
+
+            {onlineUsers.map((item) => {
               const isAdminItem = item.role === 'admin'
+              const isChatActive = activeChat !== 'global' && activeChat.id === item.id
+              const hasUnread = unreadCounts[item.id] > 0
               return (
-                <div key={idx} className="flex items-center gap-3 p-1.5 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 rounded-xl transition-all">
-                  {/* Status Indicator Avatar */}
-                  <div className="relative shrink-0 select-none">
-                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-extrabold text-xs ${getAvatarColor(item.name)}`}>
-                      {item.name.charAt(0).toUpperCase()}
+                <div 
+                  key={item.id} 
+                  onClick={() => handleSwitchChat(item)}
+                  className={`flex items-center justify-between p-1.5 rounded-xl cursor-pointer transition-all border border-transparent ${
+                    isChatActive 
+                      ? 'bg-primary/10 border-primary/20 text-slate-800 dark:text-slate-100' 
+                      : 'hover:bg-slate-50/50 dark:hover:bg-slate-900/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    {/* Status Indicator Avatar */}
+                    <div className="relative shrink-0 select-none">
+                      <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-extrabold text-xs ${getAvatarColor(item.name)}`}>
+                        {item.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border border-card-light dark:border-card-dark rounded-full"></span>
                     </div>
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border border-card-light dark:border-card-dark rounded-full"></span>
+
+                    {/* Active User Information */}
+                    <div className="overflow-hidden">
+                      <h5 className="font-extrabold text-slate-800 dark:text-slate-200 text-[11px] truncate flex items-center gap-1.5">
+                        <span>{item.name}</span>
+                        {isAdminItem && (
+                          <span className="inline-flex px-1 bg-primary/10 border border-primary/20 text-primary text-[7px] font-black uppercase rounded-full tracking-wider">
+                            Admin
+                          </span>
+                        )}
+                      </h5>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider truncate mt-0.5">
+                        {item.target_role}
+                      </p>
+                      <p className="text-[8px] text-slate-500 font-semibold truncate">
+                        {item.college !== 'N/A' ? item.college : 'Co-Pilot App'}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Active User Information */}
-                  <div className="overflow-hidden">
-                    <h5 className="font-extrabold text-slate-800 dark:text-slate-200 text-[11px] truncate flex items-center gap-1.5">
-                      <span>{item.name}</span>
-                      {isAdminItem && (
-                        <span className="inline-flex px-1 bg-primary/10 border border-primary/20 text-primary text-[7px] font-black uppercase rounded-full tracking-wider">
-                          Admin
-                        </span>
-                      )}
-                    </h5>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider truncate mt-0.5">
-                      {item.target_role}
-                    </p>
-                    <p className="text-[8px] text-slate-500 font-semibold truncate">
-                      {item.college !== 'N/A' ? item.college : 'Co-Pilot App'}
-                    </p>
-                  </div>
+                  {/* Unread Message Badge */}
+                  {hasUnread && (
+                    <span className="ml-2 px-2 py-0.5 bg-rose-500 text-white text-[9px] font-extrabold rounded-full animate-bounce shrink-0">
+                      {unreadCounts[item.id]}
+                    </span>
+                  )}
                 </div>
               )
             })}
