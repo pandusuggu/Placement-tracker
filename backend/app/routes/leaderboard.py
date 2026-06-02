@@ -22,6 +22,25 @@ async def get_weekly_leaderboard(user: User = Depends(get_current_user)):
         coding_progress = await CodingProgress.find_one(CodingProgress.user_id == u.id)
         problems_solved = 0
         if coding_progress:
+            # Self-healing backfill: sync checklist solves with daily_solved_count
+            topic_names = {
+                "Arrays", "Strings", "Linked Lists", "Stack", "Queue", "Trees", "Graphs", 
+                "Heap", "Recursion", "Backtracking", "Greedy", "Dynamic Programming"
+            }
+            checklist_solved = sum(
+                1 for k, v in coding_progress.dsa_progress.items()
+                if k not in topic_names and v == "completed"
+            )
+            total_daily_solved = sum(coding_progress.daily_solved_count.values()) if coding_progress.daily_solved_count else 0
+            
+            if checklist_solved > total_daily_solved:
+                diff = checklist_solved - total_daily_solved
+                today_str = datetime.utcnow().strftime("%Y-%m-%d")
+                if not coding_progress.daily_solved_count:
+                    coding_progress.daily_solved_count = {}
+                coding_progress.daily_solved_count[today_str] = coding_progress.daily_solved_count.get(today_str, 0) + diff
+                await coding_progress.save()
+
             # Sum solved in the last 7 days from daily_solved_count
             for day_offset in range(7):
                 day_str = (datetime.utcnow() - timedelta(days=day_offset)).strftime("%Y-%m-%d")
