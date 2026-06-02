@@ -105,9 +105,9 @@ class CodingService:
             total_hard += lc["hard"]
             changed = True
 
-        # Fetch CodeChef
-        if progress.codechef_username:
-            cc = await CodingService.fetch_platform_stats("codechef", progress.codechef_username)
+        # Fetch GeeksforGeeks
+        if progress.gfg_username:
+            cc = await CodingService.fetch_platform_stats("gfg", progress.gfg_username)
             total_easy += cc["easy"]
             total_medium += cc["medium"]
             total_hard += cc["hard"]

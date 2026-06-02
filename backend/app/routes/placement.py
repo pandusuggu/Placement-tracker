@@ -23,7 +23,7 @@ async def get_placement_readiness(user: User = Depends(get_current_user)):
             progress = CodingProgress(
                 user_id=user.id,
                 leetcode_username="",
-                codechef_username="",
+                gfg_username="",
                 hackerrank_username="",
                 dsa_progress={},
                 core_subjects_progress={"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0},
@@ -84,7 +84,7 @@ async def analyze_user_resume(
             progress = CodingProgress(
                 user_id=user.id,
                 leetcode_username="",
-                codechef_username="",
+                gfg_username="",
                 hackerrank_username="",
                 dsa_progress={},
                 core_subjects_progress={"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0},

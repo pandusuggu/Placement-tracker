@@ -257,7 +257,7 @@ export const Calendar: React.FC = () => {
                   <input
                     required
                     type="text"
-                    placeholder="e.g. CodeChef Contest"
+                    placeholder="e.g. GeeksforGeeks Contest"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="glass-input text-xs py-2"

@@ -11,7 +11,7 @@ class ProjectTrackerItem(BaseModel):
 class CodingProgress(Document):
     user_id: PydanticObjectId
     leetcode_username: Optional[str] = None
-    codechef_username: Optional[str] = None
+    gfg_username: Optional[str] = None
     hackerrank_username: Optional[str] = None
     
     easy_solved: int = 0

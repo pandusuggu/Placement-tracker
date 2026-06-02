@@ -165,7 +165,7 @@ export const Pomodoro: React.FC = () => {
                 disabled={isRunning}
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
                   sessionMode === mode 
-                    ? 'bg-white dark:bg-card-dark text-slate-800 dark:text-slate-150 shadow-sm border border-slate-200 dark:border-slate-800' 
+                    ? 'bg-white dark:bg-card-dark text-slate-800 dark:text-slate-200 shadow-sm border border-slate-200 dark:border-slate-800' 
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
@@ -203,7 +203,7 @@ export const Pomodoro: React.FC = () => {
               <span className="text-4xl font-extrabold font-mono tracking-wider text-slate-800 dark:text-slate-100">
                 {formatTime(timeLeft)}
               </span>
-              <p className="text-[10px] uppercase font-bold text-slate-450 tracking-widest mt-1">
+              <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest mt-1">
                 {isBreak ? 'Chill break' : 'Stay Focused'}
               </p>
             </div>
@@ -250,14 +250,14 @@ export const Pomodoro: React.FC = () => {
             
             <div className="grid grid-cols-2 gap-4 w-full border-t border-border-light dark:border-border-dark pt-4">
               <div>
-                <span className="text-xl font-extrabold text-slate-800 dark:text-slate-150">
+                <span className="text-xl font-extrabold text-slate-800 dark:text-slate-200">
                   {historyData?.completed_count || 0}
                 </span>
                 <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Sessions Done</p>
               </div>
               
               <div>
-                <span className="text-xl font-extrabold text-slate-800 dark:text-slate-150">
+                <span className="text-xl font-extrabold text-slate-800 dark:text-slate-200">
                   {historyData?.today_minutes || 0}m
                 </span>
                 <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Minutes Today</p>
@@ -279,11 +279,11 @@ export const Pomodoro: React.FC = () => {
                     key={session.id} 
                     className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/50 dark:bg-slate-900/50 text-xs font-semibold"
                   >
-                    <span className="text-slate-800 dark:text-slate-250 flex items-center gap-1.5">
+                    <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                       <Sparkles size={12} className="text-primary" />
                       Focus session Completed
                     </span>
-                    <span className="text-slate-450 font-bold">
+                    <span className="text-slate-500 dark:text-slate-400 font-bold">
                       {session.duration} min
                     </span>
                   </div>

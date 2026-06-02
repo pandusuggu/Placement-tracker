@@ -19,7 +19,7 @@ interface Project {
 
 interface ProgressData {
   leetcode_username: string
-  codechef_username: string
+  gfg_username: string
   hackerrank_username: string
   easy_solved: number
   medium_solved: number
@@ -290,7 +290,7 @@ export const Prep: React.FC = () => {
 
   // Username states
   const [leetcode, setLeetcode] = useState('')
-  const [codechef, setCodechef] = useState('')
+  const [gfg, setGfg] = useState('')
   const [hackerrank, setHackerrank] = useState('')
   const [showSyncPanel, setShowSyncPanel] = useState(false)
 
@@ -624,7 +624,7 @@ export const Prep: React.FC = () => {
       const res = await api.get('/api/coding/progress')
       setProgress(res.data)
       setLeetcode(res.data.leetcode_username || '')
-      setCodechef(res.data.codechef_username || '')
+      setGfg(res.data.gfg_username || '')
       setHackerrank(res.data.hackerrank_username || '')
       
       const readRes = await api.get('/api/placement/readiness')
@@ -674,7 +674,7 @@ export const Prep: React.FC = () => {
     try {
       await api.put('/api/coding/usernames', {
         leetcode_username: leetcode,
-        codechef_username: codechef,
+        gfg_username: gfg,
         hackerrank_username: hackerrank
       })
       await fetchProgress()
@@ -1087,12 +1087,12 @@ export const Prep: React.FC = () => {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">CodeChef Username</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase">GeeksforGeeks Username</label>
               <input
                 type="text"
-                placeholder="e.g. chef_jane"
-                value={codechef}
-                onChange={(e) => setCodechef(e.target.value)}
+                placeholder="e.g. gfg_jane"
+                value={gfg}
+                onChange={(e) => setGfg(e.target.value)}
                 className="glass-input text-xs py-2"
               />
             </div>
@@ -1298,16 +1298,16 @@ export const Prep: React.FC = () => {
             </div>
           </div>
 
-          {/* CodeChef profile details */}
+          {/* GeeksforGeeks profile details */}
           <div className="glass-card p-5 border-slate-200 dark:border-slate-800/80 space-y-2.5">
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">CodeChef</span>
-              <span className="text-[10px] font-bold text-slate-500">{progress.codechef_username || 'Not Synced'}</span>
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">GeeksforGeeks</span>
+              <span className="text-[10px] font-bold text-slate-500">{progress.gfg_username || 'Not Synced'}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-slate-600 dark:text-slate-350">Status Profile</span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${progress.codechef_username ? 'bg-primary/10 text-primary' : 'bg-slate-200 dark:bg-slate-900 text-slate-500'}`}>
-                {progress.codechef_username ? 'Active' : 'Unlinked'}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${progress.gfg_username ? 'bg-primary/10 text-primary' : 'bg-slate-200 dark:bg-slate-900 text-slate-500'}`}>
+                {progress.gfg_username ? 'Active' : 'Unlinked'}
               </span>
             </div>
             <p className="text-[10px] text-slate-500 font-bold uppercase">Automated Sync Enabled</p>

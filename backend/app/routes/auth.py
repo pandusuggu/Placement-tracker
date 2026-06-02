@@ -60,7 +60,7 @@ async def register(data: RegisterSchema):
     progress = CodingProgress(
         user_id=user.id,
         leetcode_username="",
-        codechef_username="",
+        gfg_username="",
         hackerrank_username="",
         dsa_progress={},
         core_subjects_progress={"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0},
@@ -185,7 +185,7 @@ async def google_login(data: GoogleLoginSchema):
         progress = CodingProgress(
             user_id=user.id,
             leetcode_username="",
-            codechef_username="",
+            gfg_username="",
             hackerrank_username="",
             dsa_progress={},
             core_subjects_progress={"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0},

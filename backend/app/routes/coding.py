@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/coding", tags=["Coding Tracker & Placement Hub"]
 
 class UsernamesSchema(BaseModel):
     leetcode_username: Optional[str] = ""
-    codechef_username: Optional[str] = ""
+    gfg_username: Optional[str] = ""
     hackerrank_username: Optional[str] = ""
 
 class DSATopicUpdateSchema(BaseModel):
@@ -124,7 +124,7 @@ async def get_progress(user: User = Depends(get_current_user)):
         progress = CodingProgress(
             user_id=user.id,
             leetcode_username="",
-            codechef_username="",
+            gfg_username="",
             hackerrank_username="",
             dsa_progress={},
             core_subjects_progress={"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0},
@@ -178,7 +178,7 @@ async def update_usernames(data: UsernamesSchema, user: User = Depends(get_curre
         progress = CodingProgress(user_id=user.id)
         
     progress.leetcode_username = data.leetcode_username
-    progress.codechef_username = data.codechef_username
+    progress.gfg_username = data.gfg_username
     progress.hackerrank_username = data.hackerrank_username
     
     await progress.save()
