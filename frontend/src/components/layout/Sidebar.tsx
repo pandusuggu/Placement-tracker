@@ -13,9 +13,11 @@ import {
   Compass,
   X,
   Trophy,
-  Shield
+  Shield,
+  MessageSquare
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+
 
 interface SidebarProps {
   currentTab: string
@@ -35,10 +37,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, sid
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'prep', label: 'Placement Prep', icon: GraduationCap },
     { id: 'leaderboard', label: 'Weekly Leaderboard', icon: Trophy },
+    { id: 'community', label: 'Community Chat', icon: MessageSquare },
     { id: 'ai-planner', label: 'AI Study Planner', icon: Compass },
     { id: 'ai-coach', label: 'AI Coach Insights', icon: Brain },
     { id: 'reflections', label: 'Daily Reflection', icon: BookOpen },
   ]
+
 
   const navItems = user?.role === 'admin'
     ? [...baseItems, { id: 'admin', label: 'Admin Panel', icon: Shield }]

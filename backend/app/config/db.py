@@ -15,6 +15,7 @@ from app.models.recommendation import AIRecommendation
 from app.models.reflection import DailyReflection
 from app.models.notification import Notification
 from app.models.analytics import Analytics, PlacementScore
+from app.models.chat import ChatMessage
 
 logger = logging.getLogger("codepilot")
 
@@ -50,7 +51,8 @@ async def init_db():
             DailyReflection,
             Notification,
             Analytics,
-            PlacementScore
+            PlacementScore,
+            ChatMessage
         ]
         
         # Initialize Beanie

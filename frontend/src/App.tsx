@@ -19,6 +19,7 @@ import { AICoach } from './components/pages/AICoach'
 import { Reflections } from './components/pages/Reflections'
 import { Leaderboard } from './components/pages/Leaderboard'
 import { Admin } from './components/pages/Admin'
+import { Community } from './components/pages/Community'
 
 export const App: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore()
@@ -54,7 +55,10 @@ export const App: React.FC = () => {
         return <Prep />
       case 'leaderboard':
         return <Leaderboard />
+      case 'community':
+        return <Community />
       case 'admin':
+
         return user?.role === 'admin' ? <Admin /> : <Dashboard />
       case 'ai-planner':
         return <AIPlanner />
