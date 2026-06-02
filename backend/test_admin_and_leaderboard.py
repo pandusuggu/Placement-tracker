@@ -137,6 +137,57 @@ async def run_realistic_tests():
         assert student_entry["score"] == 60
         print("   Weekly Leaderboard scores calculated correctly (Score = 60 pts).")
 
+        # Test 6: Verify manual checklist solves integration and backfilling
+        print("6. Testing checklist solved counting and toggling via API...")
+        
+        # A: Toggle a specific question to completed
+        # Question ID: "reverse-linked-list" (not a topic category name)
+        toggle_res = await client.post("/api/coding/dsa", json={
+            "topic": "reverse-linked-list",
+            "status": "completed"
+        }, headers=headers_student)
+        assert toggle_res.status_code == 200, f"Toggle failed: {toggle_res.text}"
+        
+        # Let's verify progress endpoint shows it completed and daily solved count is incremented by 1
+        progress_res = await client.get("/api/coding/progress", headers=headers_student)
+        progress_data = progress_res.json()
+        
+        today_str = datetime.utcnow().strftime("%Y-%m-%d")
+        assert progress_data["dsa_progress"]["reverse-linked-list"] == "completed"
+        # Initial today solves was 3, should now be 4!
+        assert progress_data["daily_solved_count"][today_str] == 4
+        print("   Toggling a checklist question to completed incremented daily solved count.")
+
+        # B: Toggle a checklist question to not_started
+        toggle_res2 = await client.post("/api/coding/dsa", json={
+            "topic": "reverse-linked-list",
+            "status": "not_started"
+        }, headers=headers_student)
+        assert toggle_res2.status_code == 200
+        
+        progress_res2 = await client.get("/api/coding/progress", headers=headers_student)
+        progress_data2 = progress_res2.json()
+        assert progress_data2["dsa_progress"]["reverse-linked-list"] == "not_started"
+        # Today solves should go back to 3!
+        assert progress_data2["daily_solved_count"][today_str] == 3
+        print("   Toggling a checklist question to not_started decremented daily solved count.")
+
+        # C: Backfilling check:
+        # If we manually update dsa_progress with completed questions but empty daily_solved_count
+        db_progress = await CodingProgress.find_one(CodingProgress.user_id == stu_doc.id)
+        db_progress.dsa_progress["two-sum"] = "completed"
+        db_progress.dsa_progress["contains-duplicate"] = "completed"
+        db_progress.dsa_progress["Arrays"] = "completed"  # category, should not count towards solved count
+        db_progress.daily_solved_count = {}  # empty it out
+        await db_progress.save()
+        
+        # When user retrieves progress, it should backfill the difference (2 solves) to today
+        progress_res3 = await client.get("/api/coding/progress", headers=headers_student)
+        progress_data3 = progress_res3.json()
+        # Should backfill two completed questions into today
+        assert progress_data3["daily_solved_count"][today_str] == 2
+        print("   Self-healing backfill successfully synced completed checklist questions into daily solved count.")
+
         # Clean up test accounts
         await stu_doc.delete()
         await progress.delete()

@@ -179,6 +179,25 @@ async def get_progress(user: User = Depends(get_current_user)):
                     if topic not in progress.aptitude_questions or not progress.aptitude_questions[topic]:
                         progress.aptitude_questions[topic] = DEFAULT_APTITUDE_QUESTIONS[topic]
                         need_save = True
+
+        # Backfill check: sync manual checklist solves with daily_solved_count
+        topic_names = {
+            "Arrays", "Strings", "Linked Lists", "Stack", "Queue", "Trees", "Graphs", 
+            "Heap", "Recursion", "Backtracking", "Greedy", "Dynamic Programming"
+        }
+        checklist_solved = sum(
+            1 for k, v in progress.dsa_progress.items()
+            if k not in topic_names and v == "completed"
+        )
+        total_daily_solved = sum(progress.daily_solved_count.values()) if progress.daily_solved_count else 0
+        
+        if checklist_solved > total_daily_solved:
+            diff = checklist_solved - total_daily_solved
+            today_str = datetime.utcnow().strftime("%Y-%m-%d")
+            if not progress.daily_solved_count:
+                progress.daily_solved_count = {}
+            progress.daily_solved_count[today_str] = progress.daily_solved_count.get(today_str, 0) + diff
+            need_save = True
                     
         if need_save:
             await progress.save()
@@ -226,7 +245,26 @@ async def update_dsa_topic(data: DSATopicUpdateSchema, user: User = Depends(get_
     if not progress:
         raise HTTPException(status_code=404, detail="Progress record not found")
         
+    topic_names = {
+        "Arrays", "Strings", "Linked Lists", "Stack", "Queue", "Trees", "Graphs", 
+        "Heap", "Recursion", "Backtracking", "Greedy", "Dynamic Programming"
+    }
+    
+    is_question = data.topic not in topic_names
+    old_status = progress.dsa_progress.get(data.topic, "not_started")
+    
     progress.dsa_progress[data.topic] = data.status
+    
+    # If it's a question, update daily_solved_count
+    if is_question:
+        today_str = datetime.utcnow().strftime("%Y-%m-%d")
+        if not progress.daily_solved_count:
+            progress.daily_solved_count = {}
+        if data.status == "completed" and old_status != "completed":
+            progress.daily_solved_count[today_str] = progress.daily_solved_count.get(today_str, 0) + 1
+        elif data.status == "not_started" and old_status == "completed":
+            progress.daily_solved_count[today_str] = max(progress.daily_solved_count.get(today_str, 0) - 1, 0)
+            
     await progress.save()
     
     # Recalculate readiness
