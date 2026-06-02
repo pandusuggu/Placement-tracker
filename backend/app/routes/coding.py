@@ -135,8 +135,22 @@ async def get_progress(user: User = Depends(get_current_user)):
         )
         await progress.create()
     else:
-        # Initialize core & aptitude questions if missing
         need_save = False
+        # Self-healing check: clear any fake sync spikes (> 15 solves in a single day)
+        if progress.daily_solved_count:
+            cleaned_counts = {}
+            cleaned = False
+            for d_str, val in progress.daily_solved_count.items():
+                if val > 15:
+                    cleaned_counts[d_str] = 0
+                    cleaned = True
+                else:
+                    cleaned_counts[d_str] = val
+            if cleaned:
+                progress.daily_solved_count = cleaned_counts
+                need_save = True
+
+        # Initialize core & aptitude questions if missing
         if not progress.core_subjects_questions:
             progress.core_subjects_questions = DEFAULT_CS_QUESTIONS
             need_save = True

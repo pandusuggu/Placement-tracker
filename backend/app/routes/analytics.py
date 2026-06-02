@@ -32,6 +32,18 @@ async def get_analytics_report(user: User = Depends(get_current_user)):
     all_logs = await HabitLog.find(HabitLog.user_id == user.id, HabitLog.completed == True).to_list()
     
     coding_progress = await CodingProgress.find_one(CodingProgress.user_id == user.id)
+    if coding_progress and coding_progress.daily_solved_count:
+        cleaned_counts = {}
+        cleaned = False
+        for d_str, val in coding_progress.daily_solved_count.items():
+            if val > 15:
+                cleaned_counts[d_str] = 0
+                cleaned = True
+            else:
+                cleaned_counts[d_str] = val
+        if cleaned:
+            coding_progress.daily_solved_count = cleaned_counts
+            await coding_progress.save()
 
     total_focus_min = 0
     total_tasks_done = 0
