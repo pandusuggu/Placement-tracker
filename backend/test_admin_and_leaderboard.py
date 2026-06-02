@@ -200,6 +200,34 @@ async def run_realistic_tests():
         assert progress_data3["daily_solved_count"][today_str] == 2
         print("   Self-healing backfill successfully synced completed checklist questions into daily solved count.")
 
+        # Test 7: Verify student deletion cascading logic
+        print("7. Testing student deletion cascading logic...")
+        
+        # Register a temporary student to delete
+        temp_student_email = "delete.me@example.com"
+        reg_temp_res = await client.post("/api/auth/register", json={
+            "name": "Delete Me",
+            "email": temp_student_email,
+            "password": "password123",
+            "role": "user"
+        })
+        assert reg_temp_res.status_code == 201
+        temp_user_id = reg_temp_res.json()["user"]["id"]
+        
+        # A: Student trying to delete another student should fail
+        del_fail_res = await client.delete(f"/api/admin/users/{temp_user_id}", headers=headers_student)
+        assert del_fail_res.status_code == 403, "Student should not be able to delete another user"
+        print("   Success! Student restricted from deleting other accounts.")
+        
+        # B: Admin deleting student should succeed
+        del_success_res = await client.delete(f"/api/admin/users/{temp_user_id}", headers=headers_admin)
+        assert del_success_res.status_code == 200, f"Admin deletion failed: {del_success_res.text}"
+        
+        # Verify user document is deleted
+        temp_user_check = await User.find_one(User.email == temp_student_email)
+        assert temp_user_check is None, "User document should have been deleted"
+        print("   Success! Admin deleted student account successfully.")
+
         # Clean up test accounts
         await stu_doc.delete()
         await progress.delete()

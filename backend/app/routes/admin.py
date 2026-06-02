@@ -1,6 +1,19 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
+from beanie import PydanticObjectId
+
 from app.models.user import User
+from app.models.task import Task
+from app.models.habit import Habit, HabitLog
+from app.models.scheduler import Goal, Schedule
+from app.models.calendar import CalendarEvent
+from app.models.pomodoro import PomodoroSession
+from app.models.coding import CodingProgress
+from app.models.roadmap import StudyRoadmap
+from app.models.recommendation import AIRecommendation
+from app.models.reflection import DailyReflection
+from app.models.notification import Notification
+from app.models.analytics import Analytics, PlacementScore
 from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Control Panel"])
@@ -49,3 +62,49 @@ async def get_admin_stats(admin: User = Depends(require_admin)):
         "active_today": active_today,
         "users": users_list
     }
+
+@router.delete("/users/{user_id}")
+async def delete_student_user(user_id: str, admin: User = Depends(require_admin)):
+    try:
+        user_oid = PydanticObjectId(user_id)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format"
+        )
+        
+    # Check if user exists
+    user = await User.get(user_oid)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+        
+    # Prevent admins from deleting themselves to avoid locking themselves out
+    if user.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own admin account."
+        )
+        
+    # Perform cascading deletes
+    await Task.find(Task.user_id == user_oid).delete()
+    await Habit.find(Habit.user_id == user_oid).delete()
+    await HabitLog.find(HabitLog.user_id == user_oid).delete()
+    await Goal.find(Goal.user_id == user_oid).delete()
+    await Schedule.find(Schedule.user_id == user_oid).delete()
+    await CalendarEvent.find(CalendarEvent.user_id == user_oid).delete()
+    await PomodoroSession.find(PomodoroSession.user_id == user_oid).delete()
+    await CodingProgress.find(CodingProgress.user_id == user_oid).delete()
+    await StudyRoadmap.find(StudyRoadmap.user_id == user_oid).delete()
+    await AIRecommendation.find(AIRecommendation.user_id == user_oid).delete()
+    await DailyReflection.find(DailyReflection.user_id == user_oid).delete()
+    await Notification.find(Notification.user_id == user_oid).delete()
+    await Analytics.find(Analytics.user_id == user_oid).delete()
+    await PlacementScore.find(PlacementScore.user_id == user_oid).delete()
+    
+    # Delete the user document itself
+    await user.delete()
+    
+    return {"message": f"Successfully deleted user '{user.name}' and all associated dashboard records."}

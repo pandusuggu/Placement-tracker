@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, RefreshCw, Users, Activity, Search, Clock } from 'lucide-react'
+import { Shield, RefreshCw, Users, Activity, Search, Clock, Trash2 } from 'lucide-react'
 import api from '../../services/api'
 
 interface AdminUserItem {
@@ -26,6 +26,20 @@ export const Admin: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete the student account for "${userName}"? This will erase all of their tasks, Pomodoro sessions, and DSA preparation progress logs. This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await api.delete(`/api/admin/users/${userId}`)
+      await handleRefresh()
+    } catch (err) {
+      console.error('Failed to delete student account:', err)
+      alert('Failed to delete user account. Verify admin permissions.')
+    }
+  }
 
   const fetchStats = async () => {
     try {
@@ -183,6 +197,7 @@ export const Admin: React.FC = () => {
                       <th className="p-4">Registered Date</th>
                       <th className="p-4">Last Activity</th>
                       <th className="p-4 text-center">Status</th>
+                      <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-light dark:divide-border-dark font-medium">
@@ -225,12 +240,23 @@ export const Admin: React.FC = () => {
                               {userOnline ? 'Online' : 'Offline'}
                             </span>
                           </td>
+                          <td className="p-4 text-right">
+                            {user.role !== 'admin' && (
+                              <button
+                                onClick={() => handleDeleteUser(user.id, user.name)}
+                                className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg transition-all"
+                                title="Delete Student Account"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       )
                     })}
                     {filteredUsers.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="p-8 text-center text-slate-550 dark:text-slate-450 font-bold">
+                        <td colSpan={8} className="p-8 text-center text-slate-550 dark:text-slate-450 font-bold">
                           No users found matching search query.
                         </td>
                       </tr>
