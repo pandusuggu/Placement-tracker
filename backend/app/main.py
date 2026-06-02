@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config.settings import settings
 from app.config.db import init_db
-from app.routes import auth, tasks, habits, pomodoro, calendar, coding, study_planner, coach, reflection, placement, notifications, analytics
+from app.routes import auth, tasks, habits, pomodoro, calendar, coding, study_planner, coach, reflection, placement, notifications, analytics, leaderboard, admin
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -56,6 +56,8 @@ app.include_router(reflection.router)
 app.include_router(placement.router)
 app.include_router(notifications.router)
 app.include_router(analytics.router)
+app.include_router(leaderboard.router)
+app.include_router(admin.router)
 
 @app.get("/")
 def read_root():

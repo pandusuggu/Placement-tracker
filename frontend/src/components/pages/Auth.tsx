@@ -15,6 +15,7 @@ export const Auth: React.FC = () => {
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   const [loading, setLoading] = useState(false)
+  const [role, setRole] = useState('user')
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,7 +31,7 @@ export const Auth: React.FC = () => {
         const res = await api.post('/api/auth/login', { email, password })
         setAuth(res.data.access_token, res.data.user)
       } else {
-        const res = await api.post('/api/auth/register', { name, email, password })
+        const res = await api.post('/api/auth/register', { name, email, password, role })
         setAuth(res.data.access_token, res.data.user)
       }
     } catch (err: any) {
@@ -123,6 +124,21 @@ export const Auth: React.FC = () => {
                     className="glass-input pl-10"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Register: Account Type */}
+            {!isLogin && !isForgot && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Account Type</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="glass-input text-xs w-full py-2 bg-card-light dark:bg-card-dark text-slate-700 dark:text-slate-200"
+                >
+                  <option value="user">Student (Standard User)</option>
+                  <option value="admin">Placement Admin (Special Access)</option>
+                </select>
               </div>
             )}
 

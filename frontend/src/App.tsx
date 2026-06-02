@@ -17,9 +17,11 @@ import { Prep } from './components/pages/Prep'
 import { AIPlanner } from './components/pages/AIPlanner'
 import { AICoach } from './components/pages/AICoach'
 import { Reflections } from './components/pages/Reflections'
+import { Leaderboard } from './components/pages/Leaderboard'
+import { Admin } from './components/pages/Admin'
 
 export const App: React.FC = () => {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
   const { initTheme } = useThemeStore()
   
   // Manage tabs internally to avoid routing friction on local previews
@@ -50,6 +52,10 @@ export const App: React.FC = () => {
         return <Calendar />
       case 'prep':
         return <Prep />
+      case 'leaderboard':
+        return <Leaderboard />
+      case 'admin':
+        return user?.role === 'admin' ? <Admin /> : <Dashboard />
       case 'ai-planner':
         return <AIPlanner />
       case 'ai-coach':

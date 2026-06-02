@@ -11,7 +11,9 @@ import {
   LogOut,
   ChevronRight,
   Compass,
-  X
+  X,
+  Trophy,
+  Shield
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 
@@ -25,17 +27,22 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, sidebarOpen, setSidebarOpen }) => {
   const { logout, user } = useAuthStore()
 
-  const navItems = [
+  const baseItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare },
     { id: 'habits', label: 'Habits', icon: Flame },
     { id: 'pomodoro', label: 'Pomodoro', icon: Timer },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'prep', label: 'Placement Prep', icon: GraduationCap },
+    { id: 'leaderboard', label: 'Weekly Leaderboard', icon: Trophy },
     { id: 'ai-planner', label: 'AI Study Planner', icon: Compass },
     { id: 'ai-coach', label: 'AI Coach Insights', icon: Brain },
     { id: 'reflections', label: 'Daily Reflection', icon: BookOpen },
   ]
+
+  const navItems = user?.role === 'admin'
+    ? [...baseItems, { id: 'admin', label: 'Admin Panel', icon: Shield }]
+    : baseItems
 
   return (
     <aside className={`w-64 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark flex flex-col h-screen fixed top-0 bottom-0 left-0 z-30 transition-all duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>

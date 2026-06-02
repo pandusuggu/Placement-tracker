@@ -21,6 +21,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         user = await User.get(PydanticObjectId(user_id))
         if user is None:
             raise credentials_exception
+        
+        from datetime import datetime
+        user.last_active = datetime.utcnow()
+        await user.save()
+        
         return user
     except Exception:
         raise credentials_exception

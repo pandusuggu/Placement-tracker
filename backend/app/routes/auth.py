@@ -15,6 +15,7 @@ class RegisterSchema(BaseModel):
     name: str
     email: EmailStr
     password: str
+    role: Optional[str] = "user"
 
 class LoginSchema(BaseModel):
     email: EmailStr
@@ -52,7 +53,8 @@ async def register(data: RegisterSchema):
     user = User(
         name=data.name,
         email=data.email,
-        hashed_password=hashed_pwd
+        hashed_password=hashed_pwd,
+        role=data.role or "user"
     )
     await user.create()
     
@@ -79,7 +81,8 @@ async def register(data: RegisterSchema):
             "name": user.name,
             "email": user.email,
             "target_role": user.target_role,
-            "daily_available_hours": user.daily_available_hours
+            "daily_available_hours": user.daily_available_hours,
+            "role": user.role
         }
     }
 
@@ -105,7 +108,8 @@ async def login(data: LoginSchema):
             "branch": user.branch,
             "graduation_year": user.graduation_year,
             "target_role": user.target_role,
-            "daily_available_hours": user.daily_available_hours
+            "daily_available_hours": user.daily_available_hours,
+            "role": user.role
         }
     }
 
@@ -121,6 +125,7 @@ async def get_me(user: User = Depends(get_current_user)):
         "graduation_year": user.graduation_year,
         "target_role": user.target_role,
         "daily_available_hours": user.daily_available_hours,
+        "role": user.role,
         "created_at": user.created_at
     }
 
