@@ -47,12 +47,24 @@ async def run_realistic_tests():
         student_token = reg_student_res.json()["access_token"]
         print(f"   Success! Student registered. Token: {student_token[:15]}...")
 
-        print("2. Registering placement admin user via API...")
+        print("2a. Testing admin registration passcode failure (invalid passcode)...")
+        reg_admin_fail = await client.post("/api/auth/register", json={
+            "name": "API Admin Fail",
+            "email": "bad.admin@example.com",
+            "password": "password123",
+            "role": "admin",
+            "admin_passcode": "wrong_key"
+        })
+        assert reg_admin_fail.status_code == 403, f"Registration should have failed: {reg_admin_fail.text}"
+        print("   Success! Unauthorized admin registration blocked with 403 Forbidden.")
+
+        print("2b. Registering placement admin user via API with correct passcode...")
         reg_admin_res = await client.post("/api/auth/register", json={
             "name": "API Admin",
             "email": admin_email,
             "password": "password123",
-            "role": "admin"
+            "role": "admin",
+            "admin_passcode": "admin123"
         })
         assert reg_admin_res.status_code == 201, f"Registration failed: {reg_admin_res.text}"
         admin_token = reg_admin_res.json()["access_token"]

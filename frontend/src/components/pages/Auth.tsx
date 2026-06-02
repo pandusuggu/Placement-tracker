@@ -7,15 +7,16 @@ export const Auth: React.FC = () => {
   const { setAuth } = useAuthStore()
   const [isLogin, setIsLogin] = useState(true)
   const [isForgot, setIsForgot] = useState(false)
+  const [isAdminMode, setIsAdminMode] = useState(false)
   
   // Form values
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [adminPasscode, setAdminPasscode] = useState('')
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   const [loading, setLoading] = useState(false)
-  const [role, setRole] = useState('user')
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,9 +30,23 @@ export const Auth: React.FC = () => {
         setSuccessMsg(res.data.message)
       } else if (isLogin) {
         const res = await api.post('/api/auth/login', { email, password })
+        if (isAdminMode && res.data.user.role !== 'admin') {
+          setError('This portal is restricted to Placement Admins only.')
+          setLoading(false)
+          return
+        }
         setAuth(res.data.access_token, res.data.user)
       } else {
-        const res = await api.post('/api/auth/register', { name, email, password, role })
+        const payload: any = {
+          name,
+          email,
+          password,
+          role: isAdminMode ? 'admin' : 'user'
+        }
+        if (isAdminMode) {
+          payload.admin_passcode = adminPasscode
+        }
+        const res = await api.post('/api/auth/register', payload)
         setAuth(res.data.access_token, res.data.user)
       }
     } catch (err: any) {
@@ -56,6 +71,13 @@ export const Auth: React.FC = () => {
         name: simulatedName,
         avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${simulatedName}`
       })
+      
+      if (isAdminMode && res.data.user.role !== 'admin') {
+        setError('This portal is restricted to Placement Admins only.')
+        setLoading(false)
+        return
+      }
+      
       setAuth(res.data.access_token, res.data.user)
     } catch (err: any) {
       setError('Google Sign-In simulation failed.')
@@ -70,7 +92,7 @@ export const Auth: React.FC = () => {
       {/* Decorative backdrop shapes */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-accent-violet/10 blur-[120px] pointer-events-none"></div>
-
+ 
       <div className="w-full max-w-md animate-fade-in-up">
         {/* Core Header logo */}
         <div className="flex flex-col items-center mb-8">
@@ -84,13 +106,21 @@ export const Auth: React.FC = () => {
             AI-powered productivity, routines, habit scheduler, and placement prep coach.
           </p>
         </div>
-
+ 
         {/* Auth form card container */}
         <div className="glass-card p-8">
           <h2 className="font-extrabold text-lg text-slate-800 dark:text-slate-200 mb-6">
-            {isForgot ? 'Reset Password' : isLogin ? 'Sign In to Account' : 'Create Your Account'}
+            {isForgot
+              ? 'Reset Password'
+              : isAdminMode
+              ? isLogin
+                ? 'Placement Admin Sign In'
+                : 'Create Placement Admin Account'
+              : isLogin
+              ? 'Sign In to Account'
+              : 'Create Your Account'}
           </h2>
-
+ 
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             
             {/* Error notifications */}
@@ -100,7 +130,7 @@ export const Auth: React.FC = () => {
                 <span>{error}</span>
               </div>
             )}
-
+ 
             {/* Success notifications */}
             {successMsg && (
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-xl text-xs font-semibold flex items-center gap-2">
@@ -108,7 +138,7 @@ export const Auth: React.FC = () => {
                 <span>{successMsg}</span>
               </div>
             )}
-
+ 
             {/* Register: Name Input */}
             {!isLogin && !isForgot && (
               <div className="space-y-1.5">
@@ -127,22 +157,7 @@ export const Auth: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* Register: Account Type */}
-            {!isLogin && !isForgot && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Account Type</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="glass-input text-xs w-full py-2 bg-card-light dark:bg-card-dark text-slate-700 dark:text-slate-200"
-                >
-                  <option value="user">Student (Standard User)</option>
-                  <option value="admin">Placement Admin (Special Access)</option>
-                </select>
-              </div>
-            )}
-
+ 
             {/* Email Input */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Email Address</label>
@@ -159,7 +174,7 @@ export const Auth: React.FC = () => {
                 />
               </div>
             </div>
-
+ 
             {/* Password Input */}
             {!isForgot && (
               <div className="space-y-1.5">
@@ -190,16 +205,35 @@ export const Auth: React.FC = () => {
               </div>
             )}
 
+            {/* Admin: Passcode Input */}
+            {isAdminMode && !isLogin && !isForgot && (
+              <div className="space-y-1.5 animate-fade-in-up">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Admin Registration Passcode</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    required
+                    type="password"
+                    placeholder="Enter admin security key"
+                    value={adminPasscode}
+                    onChange={(e) => setAdminPasscode(e.target.value)}
+                    className="glass-input pl-10"
+                    style={{ paddingLeft: '2.5rem' }}
+                  />
+                </div>
+              </div>
+            )}
+ 
             {/* Submit Actions */}
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition-all shadow-blue active:scale-[0.98] disabled:opacity-50 text-sm flex items-center justify-center"
             >
-              {loading ? 'Processing...' : isForgot ? 'Request Reset Link' : isLogin ? 'Sign In' : 'Create Account'}
+              {loading ? 'Processing...' : isForgot ? 'Request Reset Link' : isLogin ? (isAdminMode ? 'Sign In as Admin' : 'Sign In') : (isAdminMode ? 'Register Admin' : 'Create Account')}
             </button>
           </form>
-
+ 
           {/* Social Sign-In buttons */}
           {!isForgot && (
             <div className="mt-6 space-y-4">
@@ -208,7 +242,7 @@ export const Auth: React.FC = () => {
                 <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">Or continue with</span>
                 <div className="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800"></div>
               </div>
-
+ 
               <button
                 onClick={handleGoogleLoginSimulate}
                 className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-350 hover:text-slate-900 dark:hover:text-slate-100 transition-all text-sm font-semibold shadow-sm"
@@ -224,7 +258,7 @@ export const Auth: React.FC = () => {
               </button>
             </div>
           )}
-
+ 
           {/* Subtext toggles */}
           <div className="mt-6 text-center text-xs">
             {isForgot ? (
@@ -257,6 +291,26 @@ export const Auth: React.FC = () => {
             )}
           </div>
 
+          {/* Admin Portal Dedicated Toggle Link */}
+          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/85 text-center">
+            <button
+              onClick={() => {
+                setIsAdminMode(!isAdminMode)
+                setIsLogin(true)
+                setIsForgot(false)
+                setName('')
+                setEmail('')
+                setPassword('')
+                setAdminPasscode('')
+                setError('')
+                setSuccessMsg('')
+              }}
+              className="text-xs font-bold text-slate-400 dark:text-slate-500 hover:text-primary transition-all flex items-center justify-center gap-1 mx-auto"
+            >
+              {isAdminMode ? '← Back to Student Portal' : 'Placement Coordinator / Admin Portal →'}
+            </button>
+          </div>
+ 
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ class RegisterSchema(BaseModel):
     email: EmailStr
     password: str
     role: Optional[str] = "user"
+    admin_passcode: Optional[str] = None
 
 class LoginSchema(BaseModel):
     email: EmailStr
@@ -49,12 +50,21 @@ async def register(data: RegisterSchema):
             detail="A user with this email already exists"
         )
         
+    role = data.role or "user"
+    if role == "admin":
+        from app.config.settings import settings
+        if not data.admin_passcode or data.admin_passcode != settings.admin_passcode:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: Invalid admin registration passcode."
+            )
+
     hashed_pwd = get_password_hash(data.password)
     user = User(
         name=data.name,
         email=data.email,
         hashed_password=hashed_pwd,
-        role=data.role or "user"
+        role=role
     )
     await user.create()
     
