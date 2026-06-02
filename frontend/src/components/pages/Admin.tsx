@@ -69,9 +69,23 @@ export const Admin: React.FC = () => {
     fetchStats()
   }, [])
 
+  const parseUTCDate = (dateStr: string): Date => {
+    if (!dateStr) return new Date()
+    let cleanStr = dateStr.replace(' ', 'T')
+    if (
+      !cleanStr.endsWith('Z') && 
+      !cleanStr.includes('+') && 
+      !cleanStr.includes('GMT') &&
+      !/[-+]\d{2}:?\d{2}$/.test(cleanStr)
+    ) {
+      cleanStr += 'Z'
+    }
+    return new Date(cleanStr)
+  }
+
   const formatDateTime = (dateStr: string) => {
     try {
-      const d = new Date(dateStr)
+      const d = parseUTCDate(dateStr)
       return d.toLocaleString()
     } catch {
       return dateStr
@@ -80,7 +94,7 @@ export const Admin: React.FC = () => {
 
   const isOnline = (lastActiveStr: string) => {
     try {
-      const lastActive = new Date(lastActiveStr)
+      const lastActive = parseUTCDate(lastActiveStr)
       const now = new Date()
       // Active in the last 5 minutes (300,000 ms)
       return now.getTime() - lastActive.getTime() < 300000
@@ -88,6 +102,7 @@ export const Admin: React.FC = () => {
       return false
     }
   }
+
 
   const filteredUsers = stats?.users.filter(user => 
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
