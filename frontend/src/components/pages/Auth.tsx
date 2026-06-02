@@ -88,7 +88,7 @@ export const Auth: React.FC = () => {
         {/* Auth form card container */}
         <div className="glass-card p-8">
           <h2 className="font-extrabold text-lg text-slate-800 dark:text-slate-200 mb-6">
-            {isForgot ? 'Reset Password' : isLogin ? 'Sign In to Account' : 'Create Student Account'}
+            {isForgot ? 'Reset Password' : isLogin ? 'Sign In to Account' : 'Create Your Account'}
           </h2>
 
           <form onSubmit={handleAuthSubmit} className="space-y-4">
@@ -122,6 +122,7 @@ export const Auth: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="glass-input pl-10"
+                    style={{ paddingLeft: '2.5rem' }}
                   />
                 </div>
               </div>
@@ -154,6 +155,7 @@ export const Auth: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="glass-input pl-10"
+                  style={{ paddingLeft: '2.5rem' }}
                 />
               </div>
             </div>
@@ -182,6 +184,7 @@ export const Auth: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="glass-input pl-10"
+                    style={{ paddingLeft: '2.5rem' }}
                   />
                 </div>
               </div>
@@ -238,7 +241,7 @@ export const Auth: React.FC = () => {
                   onClick={() => setIsLogin(false)}
                   className="text-primary font-bold hover:underline"
                 >
-                  Create student profile
+                  Create an account
                 </button>
               </p>
             ) : (
