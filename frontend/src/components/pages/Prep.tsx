@@ -299,8 +299,6 @@ export const Prep: React.FC = () => {
 
   // Username states
   const [leetcode, setLeetcode] = useState('')
-  const [gfg, setGfg] = useState('')
-  const [hackerrank, setHackerrank] = useState('')
   const [showSyncPanel, setShowSyncPanel] = useState(false)
 
   // New Project Form
@@ -633,8 +631,6 @@ export const Prep: React.FC = () => {
       const res = await api.get('/api/coding/progress')
       setProgress(res.data)
       setLeetcode(res.data.leetcode_username || '')
-      setGfg(res.data.gfg_username || '')
-      setHackerrank(res.data.hackerrank_username || '')
       
       const readRes = await api.get('/api/placement/readiness')
       setReadiness(readRes.data)
@@ -683,8 +679,8 @@ export const Prep: React.FC = () => {
     try {
       await api.put('/api/coding/usernames', {
         leetcode_username: leetcode,
-        gfg_username: gfg,
-        hackerrank_username: hackerrank
+        gfg_username: "",
+        hackerrank_username: ""
       })
       await fetchProgress()
       setShowSyncPanel(false)
@@ -1084,8 +1080,8 @@ export const Prep: React.FC = () => {
             </h3>
             <button onClick={() => setShowSyncPanel(false)} className="text-xs text-slate-400 hover:text-slate-200">Close</button>
           </div>
-          <form onSubmit={handleSyncUsernames} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
+          <form onSubmit={handleSyncUsernames} className="flex flex-col sm:flex-row gap-4 items-end max-w-xl">
+            <div className="flex-1 space-y-1.5 w-full">
               <label className="text-[10px] font-bold text-slate-400 uppercase">LeetCode Username</label>
               <input
                 type="text"
@@ -1095,36 +1091,14 @@ export const Prep: React.FC = () => {
                 className="glass-input text-xs py-2"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">GeeksforGeeks Username</label>
-              <input
-                type="text"
-                placeholder="e.g. gfg_jane"
-                value={gfg}
-                onChange={(e) => setGfg(e.target.value)}
-                className="glass-input text-xs py-2"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">HackerRank Username</label>
-              <input
-                type="text"
-                placeholder="e.g. hrank_jane"
-                value={hackerrank}
-                onChange={(e) => setHackerrank(e.target.value)}
-                className="glass-input text-xs py-2"
-              />
-            </div>
-            <div className="sm:col-span-3 flex justify-end gap-2 pt-2">
-              <button
-                type="submit"
-                disabled={syncing}
-                className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2"
-              >
-                <Send size={12} />
-                <span>Save & Sync Handles</span>
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={syncing}
+              className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 h-[34px] justify-center w-full sm:w-auto whitespace-nowrap"
+            >
+              <Send size={12} />
+              <span>Save & Sync Handle</span>
+            </button>
           </form>
         </div>
       )}
@@ -1269,7 +1243,7 @@ export const Prep: React.FC = () => {
 
       {/* MIDDLE SECTION COMPACT STATS GRID: Coding platform sync numbers & streaks */}
       {progress && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Streaks Widget */}
           <div className="glass-card p-5 border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
             <div className="space-y-1">
@@ -1304,52 +1278,6 @@ export const Prep: React.FC = () => {
               <div className="bg-emerald-500 h-full" style={{ width: `${progress.leetcode_easy_solved ? (progress.leetcode_easy_solved / Math.max(1, progress.leetcode_easy_solved + progress.leetcode_medium_solved + progress.leetcode_hard_solved)) * 100 : 0}%` }}></div>
               <div className="bg-primary h-full" style={{ width: `${progress.leetcode_medium_solved ? (progress.leetcode_medium_solved / Math.max(1, progress.leetcode_easy_solved + progress.leetcode_medium_solved + progress.leetcode_hard_solved)) * 100 : 0}%` }}></div>
               <div className="bg-rose-500 h-full" style={{ width: `${progress.leetcode_hard_solved ? (progress.leetcode_hard_solved / Math.max(1, progress.leetcode_easy_solved + progress.leetcode_medium_solved + progress.leetcode_hard_solved)) * 100 : 0}%` }}></div>
-            </div>
-          </div>
-
-          {/* GeeksforGeeks profile details */}
-          <div className="glass-card p-5 border-slate-200 dark:border-slate-800/80 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">GeeksforGeeks</span>
-              <span className="text-[10px] font-bold text-slate-500">{progress.gfg_username || 'Not Synced'}</span>
-            </div>
-            <div className="flex justify-between items-baseline">
-              <h4 className="text-2xl font-extrabold text-slate-800 dark:text-slate-200">
-                {progress.gfg_easy_solved + progress.gfg_medium_solved + progress.gfg_hard_solved}
-              </h4>
-              <div className="flex gap-1.5 text-[9px] font-bold uppercase">
-                <span className="text-emerald-500">{progress.gfg_easy_solved} E</span>
-                <span className="text-primary">{progress.gfg_medium_solved} M</span>
-                <span className="text-rose-500">{progress.gfg_hard_solved} H</span>
-              </div>
-            </div>
-            <div className="w-full bg-slate-200 dark:bg-slate-900 h-1.5 rounded-full overflow-hidden flex">
-              <div className="bg-emerald-500 h-full" style={{ width: `${progress.gfg_easy_solved ? (progress.gfg_easy_solved / Math.max(1, progress.gfg_easy_solved + progress.gfg_medium_solved + progress.gfg_hard_solved)) * 100 : 0}%` }}></div>
-              <div className="bg-primary h-full" style={{ width: `${progress.gfg_medium_solved ? (progress.gfg_medium_solved / Math.max(1, progress.gfg_easy_solved + progress.gfg_medium_solved + progress.gfg_hard_solved)) * 100 : 0}%` }}></div>
-              <div className="bg-rose-500 h-full" style={{ width: `${progress.gfg_hard_solved ? (progress.gfg_hard_solved / Math.max(1, progress.gfg_easy_solved + progress.gfg_medium_solved + progress.gfg_hard_solved)) * 100 : 0}%` }}></div>
-            </div>
-          </div>
-
-          {/* HackerRank profile details */}
-          <div className="glass-card p-5 border-slate-200 dark:border-slate-800/80 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">HackerRank</span>
-              <span className="text-[10px] font-bold text-slate-500">{progress.hackerrank_username || 'Not Synced'}</span>
-            </div>
-            <div className="flex justify-between items-baseline">
-              <h4 className="text-2xl font-extrabold text-slate-800 dark:text-slate-200">
-                {progress.hackerrank_easy_solved + progress.hackerrank_medium_solved + progress.hackerrank_hard_solved}
-              </h4>
-              <div className="flex gap-1.5 text-[9px] font-bold uppercase">
-                <span className="text-emerald-500">{progress.hackerrank_easy_solved} E</span>
-                <span className="text-primary">{progress.hackerrank_medium_solved} M</span>
-                <span className="text-rose-500">{progress.hackerrank_hard_solved} H</span>
-              </div>
-            </div>
-            <div className="w-full bg-slate-200 dark:bg-slate-900 h-1.5 rounded-full overflow-hidden flex">
-              <div className="bg-emerald-500 h-full" style={{ width: `${progress.hackerrank_easy_solved ? (progress.hackerrank_easy_solved / Math.max(1, progress.hackerrank_easy_solved + progress.hackerrank_medium_solved + progress.hackerrank_hard_solved)) * 100 : 0}%` }}></div>
-              <div className="bg-primary h-full" style={{ width: `${progress.hackerrank_medium_solved ? (progress.hackerrank_medium_solved / Math.max(1, progress.hackerrank_easy_solved + progress.hackerrank_medium_solved + progress.hackerrank_hard_solved)) * 100 : 0}%` }}></div>
-              <div className="bg-rose-500 h-full" style={{ width: `${progress.hackerrank_hard_solved ? (progress.hackerrank_hard_solved / Math.max(1, progress.hackerrank_easy_solved + progress.hackerrank_medium_solved + progress.hackerrank_hard_solved)) * 100 : 0}%` }}></div>
             </div>
           </div>
         </div>

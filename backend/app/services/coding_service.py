@@ -139,35 +139,13 @@ class CodingService:
             progress.leetcode_medium_solved = 0
             progress.leetcode_hard_solved = 0
 
-        # Fetch GeeksforGeeks
-        if progress.gfg_username:
-            cc = await CodingService.fetch_platform_stats("gfg", progress.gfg_username)
-            progress.gfg_easy_solved = cc["easy"]
-            progress.gfg_medium_solved = cc["medium"]
-            progress.gfg_hard_solved = cc["hard"]
-            total_easy += cc["easy"]
-            total_medium += cc["medium"]
-            total_hard += cc["hard"]
-            changed = True
-        else:
-            progress.gfg_easy_solved = 0
-            progress.gfg_medium_solved = 0
-            progress.gfg_hard_solved = 0
-
-        # Fetch HackerRank
-        if progress.hackerrank_username:
-            hr = await CodingService.fetch_platform_stats("hackerrank", progress.hackerrank_username)
-            progress.hackerrank_easy_solved = hr["easy"]
-            progress.hackerrank_medium_solved = hr["medium"]
-            progress.hackerrank_hard_solved = hr["hard"]
-            total_easy += hr["easy"]
-            total_medium += hr["medium"]
-            total_hard += hr["hard"]
-            changed = True
-        else:
-            progress.hackerrank_easy_solved = 0
-            progress.hackerrank_medium_solved = 0
-            progress.hackerrank_hard_solved = 0
+        # GeeksforGeeks and HackerRank profiles are removed (only LeetCode is synced)
+        progress.gfg_easy_solved = 0
+        progress.gfg_medium_solved = 0
+        progress.gfg_hard_solved = 0
+        progress.hackerrank_easy_solved = 0
+        progress.hackerrank_medium_solved = 0
+        progress.hackerrank_hard_solved = 0
 
         if changed:
             # Calculate daily difference
