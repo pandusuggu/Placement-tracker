@@ -87,7 +87,7 @@ class CodingService:
                     response = await client.get(url, headers=headers)
                     if response.status_code == 200:
                         html = response.text
-                        match = re.search(r'"total_problems_solved":\s*(\d+)', html)
+                        match = re.search(r'total_problems_solved\\*"\s*:\s*(\d+)', html)
                         if match:
                             total = int(match.group(1))
                             easy = int(total * 0.5)
