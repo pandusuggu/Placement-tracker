@@ -125,8 +125,14 @@ class CodingService:
         total_hard = 0
 
         # Fetch LeetCode
+        lc_diff = 0
         if progress.leetcode_username:
             lc = await CodingService.fetch_platform_stats("leetcode", progress.leetcode_username)
+            old_lc_total = (progress.leetcode_easy_solved or 0) + (progress.leetcode_medium_solved or 0) + (progress.leetcode_hard_solved or 0)
+            new_lc_total = lc["easy"] + lc["medium"] + lc["hard"]
+            if old_lc_total > 0:
+                lc_diff = max(new_lc_total - old_lc_total, 0)
+            
             progress.leetcode_easy_solved = lc["easy"]
             progress.leetcode_medium_solved = lc["medium"]
             progress.leetcode_hard_solved = lc["hard"]
@@ -148,15 +154,7 @@ class CodingService:
         progress.hackerrank_hard_solved = 0
 
         if changed:
-            # Calculate daily difference
-            old_total = progress.easy_solved + progress.medium_solved + progress.hard_solved
-            new_total = total_easy + total_medium + total_hard
-            
-            # If it's the first sync, don't count existing solved as solved today
-            if old_total == 0:
-                diff = 0
-            else:
-                diff = max(new_total - old_total, 0)
+            diff = lc_diff
 
             progress.easy_solved = total_easy
             progress.medium_solved = total_medium
