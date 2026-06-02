@@ -18,6 +18,18 @@ class CodingProgress(Document):
     medium_solved: int = 0
     hard_solved: int = 0
     
+    leetcode_easy_solved: int = 0
+    leetcode_medium_solved: int = 0
+    leetcode_hard_solved: int = 0
+    
+    gfg_easy_solved: int = 0
+    gfg_medium_solved: int = 0
+    gfg_hard_solved: int = 0
+    
+    hackerrank_easy_solved: int = 0
+    hackerrank_medium_solved: int = 0
+    hackerrank_hard_solved: int = 0
+    
     current_streak: int = 0
     longest_streak: int = 0
     daily_solved_count: Dict[str, int] = Field(default_factory=dict)  # Format: {"YYYY-MM-DD": 3}

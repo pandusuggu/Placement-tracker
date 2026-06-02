@@ -24,6 +24,15 @@ interface ProgressData {
   easy_solved: number
   medium_solved: number
   hard_solved: number
+  leetcode_easy_solved: number
+  leetcode_medium_solved: number
+  leetcode_hard_solved: number
+  gfg_easy_solved: number
+  gfg_medium_solved: number
+  gfg_hard_solved: number
+  hackerrank_easy_solved: number
+  hackerrank_medium_solved: number
+  hackerrank_hard_solved: number
   current_streak: number
   longest_streak: number
   dsa_progress: Record<string, string>
@@ -1283,49 +1292,65 @@ export const Prep: React.FC = () => {
             </div>
             <div className="flex justify-between items-baseline">
               <h4 className="text-2xl font-extrabold text-slate-800 dark:text-slate-200">
-                {progress.easy_solved + progress.medium_solved + progress.hard_solved}
+                {progress.leetcode_easy_solved + progress.leetcode_medium_solved + progress.leetcode_hard_solved}
               </h4>
               <div className="flex gap-1.5 text-[9px] font-bold uppercase">
-                <span className="text-emerald-500">{progress.easy_solved} E</span>
-                <span className="text-primary">{progress.medium_solved} M</span>
-                <span className="text-rose-500">{progress.hard_solved} H</span>
+                <span className="text-emerald-500">{progress.leetcode_easy_solved} E</span>
+                <span className="text-primary">{progress.leetcode_medium_solved} M</span>
+                <span className="text-rose-500">{progress.leetcode_hard_solved} H</span>
               </div>
             </div>
             <div className="w-full bg-slate-200 dark:bg-slate-900 h-1.5 rounded-full overflow-hidden flex">
-              <div className="bg-emerald-500 h-full" style={{ width: `${progress.easy_solved ? (progress.easy_solved / Math.max(1, progress.easy_solved + progress.medium_solved + progress.hard_solved)) * 100 : 0}%` }}></div>
-              <div className="bg-primary h-full" style={{ width: `${progress.medium_solved ? (progress.medium_solved / Math.max(1, progress.easy_solved + progress.medium_solved + progress.hard_solved)) * 100 : 0}%` }}></div>
-              <div className="bg-rose-500 h-full" style={{ width: `${progress.hard_solved ? (progress.hard_solved / Math.max(1, progress.easy_solved + progress.medium_solved + progress.hard_solved)) * 100 : 0}%` }}></div>
+              <div className="bg-emerald-500 h-full" style={{ width: `${progress.leetcode_easy_solved ? (progress.leetcode_easy_solved / Math.max(1, progress.leetcode_easy_solved + progress.leetcode_medium_solved + progress.leetcode_hard_solved)) * 100 : 0}%` }}></div>
+              <div className="bg-primary h-full" style={{ width: `${progress.leetcode_medium_solved ? (progress.leetcode_medium_solved / Math.max(1, progress.leetcode_easy_solved + progress.leetcode_medium_solved + progress.leetcode_hard_solved)) * 100 : 0}%` }}></div>
+              <div className="bg-rose-500 h-full" style={{ width: `${progress.leetcode_hard_solved ? (progress.leetcode_hard_solved / Math.max(1, progress.leetcode_easy_solved + progress.leetcode_medium_solved + progress.leetcode_hard_solved)) * 100 : 0}%` }}></div>
             </div>
           </div>
 
           {/* GeeksforGeeks profile details */}
-          <div className="glass-card p-5 border-slate-200 dark:border-slate-800/80 space-y-2.5">
+          <div className="glass-card p-5 border-slate-200 dark:border-slate-800/80 space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">GeeksforGeeks</span>
               <span className="text-[10px] font-bold text-slate-500">{progress.gfg_username || 'Not Synced'}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-350">Status Profile</span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${progress.gfg_username ? 'bg-primary/10 text-primary' : 'bg-slate-200 dark:bg-slate-900 text-slate-500'}`}>
-                {progress.gfg_username ? 'Active' : 'Unlinked'}
-              </span>
+            <div className="flex justify-between items-baseline">
+              <h4 className="text-2xl font-extrabold text-slate-800 dark:text-slate-200">
+                {progress.gfg_easy_solved + progress.gfg_medium_solved + progress.gfg_hard_solved}
+              </h4>
+              <div className="flex gap-1.5 text-[9px] font-bold uppercase">
+                <span className="text-emerald-500">{progress.gfg_easy_solved} E</span>
+                <span className="text-primary">{progress.gfg_medium_solved} M</span>
+                <span className="text-rose-500">{progress.gfg_hard_solved} H</span>
+              </div>
             </div>
-            <p className="text-[10px] text-slate-500 font-bold uppercase">Automated Sync Enabled</p>
+            <div className="w-full bg-slate-200 dark:bg-slate-900 h-1.5 rounded-full overflow-hidden flex">
+              <div className="bg-emerald-500 h-full" style={{ width: `${progress.gfg_easy_solved ? (progress.gfg_easy_solved / Math.max(1, progress.gfg_easy_solved + progress.gfg_medium_solved + progress.gfg_hard_solved)) * 100 : 0}%` }}></div>
+              <div className="bg-primary h-full" style={{ width: `${progress.gfg_medium_solved ? (progress.gfg_medium_solved / Math.max(1, progress.gfg_easy_solved + progress.gfg_medium_solved + progress.gfg_hard_solved)) * 100 : 0}%` }}></div>
+              <div className="bg-rose-500 h-full" style={{ width: `${progress.gfg_hard_solved ? (progress.gfg_hard_solved / Math.max(1, progress.gfg_easy_solved + progress.gfg_medium_solved + progress.gfg_hard_solved)) * 100 : 0}%` }}></div>
+            </div>
           </div>
 
           {/* HackerRank profile details */}
-          <div className="glass-card p-5 border-slate-200 dark:border-slate-800/80 space-y-2.5">
+          <div className="glass-card p-5 border-slate-200 dark:border-slate-800/80 space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">HackerRank</span>
               <span className="text-[10px] font-bold text-slate-500">{progress.hackerrank_username || 'Not Synced'}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-350">Status Profile</span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${progress.hackerrank_username ? 'bg-primary/10 text-primary' : 'bg-slate-200 dark:bg-slate-900 text-slate-500'}`}>
-                {progress.hackerrank_username ? 'Active' : 'Unlinked'}
-              </span>
+            <div className="flex justify-between items-baseline">
+              <h4 className="text-2xl font-extrabold text-slate-800 dark:text-slate-200">
+                {progress.hackerrank_easy_solved + progress.hackerrank_medium_solved + progress.hackerrank_hard_solved}
+              </h4>
+              <div className="flex gap-1.5 text-[9px] font-bold uppercase">
+                <span className="text-emerald-500">{progress.hackerrank_easy_solved} E</span>
+                <span className="text-primary">{progress.hackerrank_medium_solved} M</span>
+                <span className="text-rose-500">{progress.hackerrank_hard_solved} H</span>
+              </div>
             </div>
-            <p className="text-[10px] text-slate-500 font-bold uppercase">Automated Sync Enabled</p>
+            <div className="w-full bg-slate-200 dark:bg-slate-900 h-1.5 rounded-full overflow-hidden flex">
+              <div className="bg-emerald-500 h-full" style={{ width: `${progress.hackerrank_easy_solved ? (progress.hackerrank_easy_solved / Math.max(1, progress.hackerrank_easy_solved + progress.hackerrank_medium_solved + progress.hackerrank_hard_solved)) * 100 : 0}%` }}></div>
+              <div className="bg-primary h-full" style={{ width: `${progress.hackerrank_medium_solved ? (progress.hackerrank_medium_solved / Math.max(1, progress.hackerrank_easy_solved + progress.hackerrank_medium_solved + progress.hackerrank_hard_solved)) * 100 : 0}%` }}></div>
+              <div className="bg-rose-500 h-full" style={{ width: `${progress.hackerrank_hard_solved ? (progress.hackerrank_hard_solved / Math.max(1, progress.hackerrank_easy_solved + progress.hackerrank_medium_solved + progress.hackerrank_hard_solved)) * 100 : 0}%` }}></div>
+            </div>
           </div>
         </div>
       )}
