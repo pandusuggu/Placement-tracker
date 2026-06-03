@@ -195,7 +195,8 @@ export const Admin: React.FC = () => {
                   placeholder="Search user name or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="glass-input pl-10 text-xs py-2"
+                  className="glass-input text-xs py-2"
+                  style={{ paddingLeft: '2.5rem' }}
                 />
               </div>
             </div>

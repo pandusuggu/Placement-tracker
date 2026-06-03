@@ -12,6 +12,13 @@ interface CalendarEventItem {
   reference_id?: string
 }
 
+const getLocalDateString = (d: Date) => {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export const Calendar: React.FC = () => {
   const [events, setEvents] = useState<CalendarEventItem[]>([])
   
@@ -43,7 +50,7 @@ export const Calendar: React.FC = () => {
     if (!title.trim()) return
 
     // Build ISO start & end times
-    const startStr = `${selectedDate.toISOString().split('T')[0]}T${eventTime}:00`
+    const startStr = `${getLocalDateString(selectedDate)}T${eventTime}:00`
     const start = new Date(startStr)
     const end = new Date(start.getTime() + 60 * 60 * 1000) // Default 1 hour duration
 
@@ -105,8 +112,8 @@ export const Calendar: React.FC = () => {
 
   // Filter events matching a date
   const getEventsForDate = (date: Date) => {
-    const checkStr = date.toISOString().split('T')[0]
-    return events.filter(e => e.start_time.split('T')[0] === checkStr)
+    const checkStr = getLocalDateString(date)
+    return events.filter(e => getLocalDateString(new Date(e.start_time)) === checkStr)
   }
 
   const activeDayEvents = getEventsForDate(selectedDate)

@@ -17,6 +17,8 @@ class RegisterSchema(BaseModel):
     password: str
     role: Optional[str] = "user"
     admin_passcode: Optional[str] = None
+    college: Optional[str] = None
+    branch: Optional[str] = None
 
 class LoginSchema(BaseModel):
     email: EmailStr
@@ -64,7 +66,9 @@ async def register(data: RegisterSchema):
         name=data.name,
         email=data.email,
         hashed_password=hashed_pwd,
-        role=role
+        role=role,
+        college=data.college,
+        branch=data.branch
     )
     await user.create()
     
@@ -92,7 +96,9 @@ async def register(data: RegisterSchema):
             "email": user.email,
             "target_role": user.target_role,
             "daily_available_hours": user.daily_available_hours,
-            "role": user.role
+            "role": user.role,
+            "college": user.college,
+            "branch": user.branch
         }
     }
 

@@ -60,7 +60,7 @@ export const Habits: React.FC = () => {
   }
 
   const handleToggleCheck = async (habit: HabitItem) => {
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     try {
       await api.post(`/api/habits/${habit.id}/check`, {
         date: todayStr,

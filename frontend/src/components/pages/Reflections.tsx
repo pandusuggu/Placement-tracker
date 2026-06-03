@@ -45,7 +45,7 @@ export const Reflections: React.FC = () => {
     if (!well.trim() || !distracted.trim() || !improve.trim()) return
 
     setSaving(true)
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     try {
       const res = await api.post('/api/reflections', {
         date: todayStr,

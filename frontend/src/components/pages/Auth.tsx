@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react'
+import { Mail, Lock, User, AlertCircle, CheckCircle, Building, GraduationCap } from 'lucide-react'
 import api from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 
@@ -14,6 +14,8 @@ export const Auth: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [adminPasscode, setAdminPasscode] = useState('')
+  const [college, setCollege] = useState('')
+  const [branch, setBranch] = useState('')
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   const [loading, setLoading] = useState(false)
@@ -41,7 +43,9 @@ export const Auth: React.FC = () => {
           name,
           email,
           password,
-          role: isAdminMode ? 'admin' : 'user'
+          role: isAdminMode ? 'admin' : 'user',
+          college: college || undefined,
+          branch: branch || undefined
         }
         if (isAdminMode) {
           payload.admin_passcode = adminPasscode
@@ -156,6 +160,43 @@ export const Auth: React.FC = () => {
                   />
                 </div>
               </div>
+            )}
+
+            {/* Register: College and Branch Inputs */}
+            {!isLogin && !isForgot && (
+              <>
+                <div className="space-y-1.5 animate-fade-in-up">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">College Name</label>
+                  <div className="relative">
+                    <Building size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      required={!isAdminMode}
+                      type="text"
+                      placeholder="e.g. State University"
+                      value={college}
+                      onChange={(e) => setCollege(e.target.value)}
+                      className="glass-input pl-10"
+                      style={{ paddingLeft: '2.5rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 animate-fade-in-up">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Branch / Department</label>
+                  <div className="relative">
+                    <GraduationCap size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      required={!isAdminMode}
+                      type="text"
+                      placeholder="e.g. Computer Science"
+                      value={branch}
+                      onChange={(e) => setBranch(e.target.value)}
+                      className="glass-input pl-10"
+                      style={{ paddingLeft: '2.5rem' }}
+                    />
+                  </div>
+                </div>
+              </>
             )}
  
             {/* Email Input */}
@@ -302,6 +343,8 @@ export const Auth: React.FC = () => {
                 setEmail('')
                 setPassword('')
                 setAdminPasscode('')
+                setCollege('')
+                setBranch('')
                 setError('')
                 setSuccessMsg('')
               }}

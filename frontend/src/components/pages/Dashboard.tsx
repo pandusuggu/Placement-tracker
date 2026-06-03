@@ -113,7 +113,7 @@ export const Dashboard: React.FC = () => {
       const questions = DSA_QUESTIONS[randomCategory]
       const randomQuestion = questions[Math.floor(Math.random() * questions.length)]
 
-      const todayStr = new Date().toISOString().split('T')[0]
+      const todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
 
       await api.post('/api/tasks', {
         title: `Solve: ${randomQuestion.title} (${randomQuestion.difficulty})`,
@@ -138,7 +138,7 @@ export const Dashboard: React.FC = () => {
 
   // Toggle habit check-in directly on Dashboard
   const handleToggleHabit = async (habitId: string, currentStatus: boolean) => {
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     try {
       await api.post(`/api/habits/${habitId}/check`, {
         date: todayStr,
