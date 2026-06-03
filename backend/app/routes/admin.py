@@ -15,6 +15,7 @@ from app.models.reflection import DailyReflection
 from app.models.notification import Notification
 from app.models.analytics import Analytics, PlacementScore
 from app.models.chat import ChatMessage
+from app.models.ai_log import AIRequestLog
 from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Control Panel"])
@@ -44,12 +45,8 @@ async def get_admin_stats(admin: User = Depends(require_admin)):
     # 3. Tasks Created
     total_tasks = await Task.count()
     
-    # 4. AI Queries Generated (Reflections + Study Plans + AI Coach suggestions)
-    total_ai_queries = (
-        await DailyReflection.count() +
-        await StudyRoadmap.count() +
-        await AIRecommendation.count()
-    )
+    # 4. AI Queries Generated (Total AI request logs)
+    total_ai_queries = await AIRequestLog.count()
     
     # 5. Messages Sent
     total_messages = await ChatMessage.count()

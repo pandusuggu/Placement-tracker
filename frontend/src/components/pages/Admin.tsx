@@ -201,7 +201,7 @@ export const Admin: React.FC = () => {
               <div className="space-y-1.5">
                 <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">AI Queries Generated</span>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-slate-100">{stats.total_ai_queries}</h4>
-                <p className="text-[10px] text-slate-500 font-bold uppercase">AI Coach suggestions</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Total AI Requests</p>
               </div>
               <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-inner">
                 <Brain size={24} />

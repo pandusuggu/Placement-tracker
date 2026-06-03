@@ -42,6 +42,7 @@ class AIService:
         Sends prompt to Groq API if configured, otherwise falls back to Gemini API.
         Throws ValueError if no active API providers are available.
         """
+        result_text = None
         if settings.groq_api_key:
             try:
                 # Call Groq API via HTTP POST using standard OpenAI chat format
@@ -72,23 +73,33 @@ class AIService:
                     )
                     if response.status_code == 200:
                         data = response.json()
-                        text = data["choices"][0]["message"]["content"].strip()
-                        return text
+                        result_text = data["choices"][0]["message"]["content"].strip()
                     else:
                         logger.error(f"Groq API returned error status {response.status_code}: {response.text}")
             except Exception as e:
                 logger.exception("Groq API invocation failed. Falling back to Gemini.")
- 
-        if has_gemini:
+
+        if not result_text and has_gemini:
             try:
                 import google.generativeai as genai
                 model = genai.GenerativeModel("gemini-1.5-flash")
                 response = model.generate_content(prompt)
-                return response.text.strip()
+                result_text = response.text.strip()
             except Exception as e:
                 logger.exception("Gemini API invocation failed.")
                 
-        raise ValueError("No active AI provider keys configured in settings")
+        if not result_text:
+            raise ValueError("No active AI provider keys configured in settings or all API calls failed.")
+
+        # Log AI Request in database
+        try:
+            from app.models.ai_log import AIRequestLog
+            log_doc = AIRequestLog(request_type="llm_call")
+            await log_doc.create()
+        except Exception as le:
+            logger.error(f"Failed to log AI request in db: {le}")
+
+        return result_text
  
     @staticmethod
     async def generate_study_roadmap(
