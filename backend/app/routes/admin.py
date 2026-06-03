@@ -14,6 +14,7 @@ from app.models.recommendation import AIRecommendation
 from app.models.reflection import DailyReflection
 from app.models.notification import Notification
 from app.models.analytics import Analytics, PlacementScore
+from app.models.chat import ChatMessage
 from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Control Panel"])
@@ -40,7 +41,23 @@ async def get_admin_stats(admin: User = Depends(require_admin)):
     one_day_ago = datetime.utcnow() - timedelta(days=1)
     active_today = await User.find(User.last_active >= one_day_ago).count()
     
-    # 3. Fetch all users list with their profiles and activity timestamps
+    # 3. Tasks Created
+    total_tasks = await Task.count()
+    
+    # 4. AI Queries Generated (Reflections + Study Plans + AI Coach suggestions)
+    total_ai_queries = (
+        await DailyReflection.count() +
+        await StudyRoadmap.count() +
+        await AIRecommendation.count()
+    )
+    
+    # 5. Messages Sent
+    total_messages = await ChatMessage.count()
+    
+    # 6. Study Plans Generated
+    total_study_plans = await StudyRoadmap.count()
+    
+    # 7. Fetch all users list with their profiles and activity timestamps
     users = await User.find_all().to_list()
     users_list = []
     for u in users:
@@ -60,6 +77,10 @@ async def get_admin_stats(admin: User = Depends(require_admin)):
         "total_users": total_users,
         "online_now": online_now,
         "active_today": active_today,
+        "total_tasks": total_tasks,
+        "total_ai_queries": total_ai_queries,
+        "total_messages": total_messages,
+        "total_study_plans": total_study_plans,
         "users": users_list
     }
 

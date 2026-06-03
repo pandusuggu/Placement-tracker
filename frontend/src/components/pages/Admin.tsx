@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, RefreshCw, Users, Activity, Search, Clock, Trash2 } from 'lucide-react'
+import { Shield, RefreshCw, Users, Activity, Search, Clock, Trash2, CheckSquare, Brain, MessageSquare, BookOpen } from 'lucide-react'
 import api from '../../services/api'
 
 interface AdminUserItem {
@@ -18,6 +18,10 @@ interface AdminStats {
   total_users: number
   online_now: number
   active_today: number
+  total_tasks: number
+  total_ai_queries: number
+  total_messages: number
+  total_study_plans: number
   users: AdminUserItem[]
 }
 
@@ -140,13 +144,13 @@ export const Admin: React.FC = () => {
       ) : stats ? (
         <>
           {/* Stats Cards Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {/* Total Registered Users */}
-            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between">
+            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between glow-blue">
               <div className="space-y-1.5">
                 <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Registered Users</span>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-slate-100">{stats.total_users}</h4>
-                <p className="text-[10px] text-slate-500 font-bold uppercase">Total user documents</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Total user accounts</p>
               </div>
               <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-inner">
                 <Users size={24} />
@@ -154,7 +158,7 @@ export const Admin: React.FC = () => {
             </div>
 
             {/* Online Now */}
-            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between">
+            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between glow-emerald">
               <div className="space-y-1.5">
                 <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Online Now</span>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -169,7 +173,7 @@ export const Admin: React.FC = () => {
             </div>
 
             {/* Active Today */}
-            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between">
+            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between glow-blue">
               <div className="space-y-1.5">
                 <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Active Today</span>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-slate-100">{stats.active_today}</h4>
@@ -177,6 +181,54 @@ export const Admin: React.FC = () => {
               </div>
               <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-500 shadow-inner">
                 <Clock size={24} />
+              </div>
+            </div>
+
+            {/* Tasks Created */}
+            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between glow-rose">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Tasks Created</span>
+                <h4 className="text-3xl font-black text-slate-800 dark:text-slate-100">{stats.total_tasks}</h4>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Total user tasks</p>
+              </div>
+              <div className="p-3 bg-rose-500/10 rounded-2xl text-rose-500 shadow-inner">
+                <CheckSquare size={24} />
+              </div>
+            </div>
+
+            {/* AI Queries */}
+            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between glow-violet">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">AI Queries Generated</span>
+                <h4 className="text-3xl font-black text-slate-800 dark:text-slate-100">{stats.total_ai_queries}</h4>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">AI Coach suggestions</p>
+              </div>
+              <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-inner">
+                <Brain size={24} />
+              </div>
+            </div>
+
+            {/* Messages Sent */}
+            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between glow-violet">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Messages Sent</span>
+                <h4 className="text-3xl font-black text-slate-800 dark:text-slate-100">{stats.total_messages}</h4>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Chat room & private messages</p>
+              </div>
+              <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-inner">
+                <MessageSquare size={24} />
+              </div>
+            </div>
+
+            {/* Study Plans */}
+            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80 hover:scale-[1.01] transition-all flex items-center justify-between glow-blue">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Study Plans Generated</span>
+                <h4 className="text-3xl font-black text-slate-800 dark:text-slate-100">{stats.total_study_plans}</h4>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">AI placement roadmaps</p>
+              </div>
+              <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-inner">
+                <BookOpen size={24} />
               </div>
             </div>
           </div>
