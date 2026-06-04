@@ -149,9 +149,12 @@ class ChatMessage(BaseModel):
 class CoachChatInput(BaseModel):
     message: str
     history: List[ChatMessage] = []
+    chat_type: Optional[str] = "coach"
 
 @router.post("/chat")
 async def coach_chat(data: CoachChatInput, user: User = Depends(verify_ai_rate_limit)):
+    chat_type = data.chat_type or "coach"
+
     # 1. Fetch current study roadmap
     roadmap = await StudyRoadmap.find(StudyRoadmap.user_id == user.id).sort(-StudyRoadmap.created_at).first_or_none()
     
@@ -211,9 +214,23 @@ async def coach_chat(data: CoachChatInput, user: User = Depends(verify_ai_rate_l
       Keep the answer concise and under 500 words.
     """
 
+    # OPTIMIZING GROQ TOKEN USAGE WITH PERSISTENT CHAT HISTORY:
+    # Limiting the context sent to Groq to only the last 2 messages (one user question and one assistant response)
+    # drastically reduces token usage. Groq charges/limits are heavily influenced by prompt token count (TPM).
+    # By only keeping the immediate previous Q&A turn, the LLM retains enough short-term memory to resolve
+    # pronouns and follow-up context (e.g. "Give Java code for that solution", where "that" refers to the previous answer),
+    # while preventing the payload from growing linearly with the conversation length.
+    from app.models.ai_coach_message import AICoachMessage
+    db_messages = await AICoachMessage.find(
+        AICoachMessage.user_id == user.id,
+        AICoachMessage.chat_type == chat_type
+    ).sort(-AICoachMessage.created_at).limit(2).to_list()
+    # Since they are fetched in descending order, we must reverse them to maintain chronological order
+    db_messages.reverse()
+
     # Formulate messages for Groq API
     messages = [{"role": "system", "content": context}]
-    for msg in data.history[-10:]:  # Keep last 10 messages for context
+    for msg in db_messages:
         messages.append({"role": msg.role, "content": msg.content})
     messages.append({"role": "user", "content": data.message})
 
@@ -229,8 +246,8 @@ async def coach_chat(data: CoachChatInput, user: User = Depends(verify_ai_rate_l
             payload = {
                 "model": "llama-3.1-8b-instant",
                 "messages": messages,
-                "temperature": 0.4,
-                "max_tokens": 500
+                "temperature": 0.3,
+                "max_tokens": 700
             }
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
@@ -242,6 +259,26 @@ async def coach_chat(data: CoachChatInput, user: User = Depends(verify_ai_rate_l
                     res_json = response.json()
                     response_text = res_json["choices"][0]["message"]["content"].strip()
                     
+                    # Store both user question and AI response in MongoDB
+                    try:
+                        user_msg_doc = AICoachMessage(
+                            user_id=user.id,
+                            role="user",
+                            content=data.message,
+                            chat_type=chat_type
+                        )
+                        await user_msg_doc.create()
+                        
+                        assistant_msg_doc = AICoachMessage(
+                            user_id=user.id,
+                            role="assistant",
+                            content=response_text,
+                            chat_type=chat_type
+                        )
+                        await assistant_msg_doc.create()
+                    except Exception as me:
+                        logger.error(f"Failed to persist chat messages in MongoDB: {me}")
+
                     # Log AI Request in database
                     try:
                         from app.models.ai_log import AIRequestLog
@@ -255,3 +292,28 @@ async def coach_chat(data: CoachChatInput, user: User = Depends(verify_ai_rate_l
             logger.exception("AI Coach Chat invocation failed.")
             
     return {"response": response_text}
+
+@router.get("/chat/history")
+async def get_ai_chat_history(chat_type: str = "coach", user: User = Depends(get_current_user)):
+    from app.models.ai_coach_message import AICoachMessage
+    messages = await AICoachMessage.find(
+        AICoachMessage.user_id == user.id,
+        AICoachMessage.chat_type == chat_type
+    ).sort(+AICoachMessage.created_at).to_list()
+    return {
+        "messages": [
+            {
+                "role": m.role,
+                "content": m.content
+            } for m in messages
+        ]
+    }
+
+@router.delete("/chat/history")
+async def clear_ai_chat_history(chat_type: str = "coach", user: User = Depends(get_current_user)):
+    from app.models.ai_coach_message import AICoachMessage
+    await AICoachMessage.find(
+        AICoachMessage.user_id == user.id,
+        AICoachMessage.chat_type == chat_type
+    ).delete()
+    return {"message": f"Successfully cleared chat history for {chat_type}."}

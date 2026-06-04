@@ -17,6 +17,7 @@ from app.models.notification import Notification
 from app.models.analytics import Analytics, PlacementScore
 from app.models.chat import ChatMessage
 from app.models.ai_log import AIRequestLog
+from app.models.ai_coach_message import AICoachMessage
 
 logger = logging.getLogger("codepilot")
 
@@ -54,7 +55,8 @@ async def init_db():
             Analytics,
             PlacementScore,
             ChatMessage,
-            AIRequestLog
+            AIRequestLog,
+            AICoachMessage
         ]
         
         # Initialize Beanie

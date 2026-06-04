@@ -594,14 +594,9 @@ export const Prep: React.FC = () => {
     setIsChatOpen(true)
 
     try {
-      const historyPayload = chatMessages.map(m => ({
-        role: m.role,
-        content: m.content
-      }))
-
       const res = await api.post('/api/coach/chat', {
         message: msgToSend,
-        history: historyPayload
+        chat_type: 'prep'
       })
 
       setPrepChatMessages(prev => [...prev, { role: 'assistant', content: res.data.response }])
@@ -619,7 +614,12 @@ export const Prep: React.FC = () => {
     handleSendPrepChatMessage(undefined, prompt)
   }
 
-  const handleClearPrepChat = () => {
+  const handleClearPrepChat = async () => {
+    try {
+      await api.delete('/api/coach/chat/history?chat_type=prep')
+    } catch (err) {
+      console.error("Failed to clear prep chat history from server:", err)
+    }
     setPrepChatMessages([
       { role: 'assistant', content: "Hi! I am your AI Placement Prep Assistant. Need help understanding a DSA problem or a Core CS question? Let me know, and I'll explain it for you!" }
     ])
@@ -669,8 +669,20 @@ export const Prep: React.FC = () => {
     }
   }
 
+  const fetchPrepChatHistory = async () => {
+    try {
+      const res = await api.get('/api/coach/chat/history?chat_type=prep')
+      if (res.data && res.data.messages && res.data.messages.length > 0) {
+        setPrepChatMessages(res.data.messages)
+      }
+    } catch (e) {
+      console.error("Failed to load prep chat history:", e)
+    }
+  }
+
   useEffect(() => {
     fetchProgress()
+    fetchPrepChatHistory()
   }, [])
 
   // Sync profile handles

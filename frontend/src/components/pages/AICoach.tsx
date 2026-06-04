@@ -21,19 +21,9 @@ export const AICoach: React.FC = () => {
   const [acknowledgedTips, setAcknowledgedTips] = useState<Record<string, boolean>>({})
 
   // Chatbot states
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>(() => {
-    const saved = localStorage.getItem('coach_chat_messages')
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    return [
-      { role: 'assistant', content: "Hi! I am your AI Productivity Coach. Ask me any questions about your schedule, roadmap, tasks, or time management tips!" }
-    ]
-  })
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
+    { role: 'assistant', content: "Hi! I am your AI Productivity Coach. Ask me any questions about your schedule, roadmap, tasks, or time management tips!" }
+  ])
   const [chatInput, setChatInput] = useState('')
   const [sending, setSending] = useState(false)
   const chatEndRef = React.useRef<HTMLDivElement>(null)
@@ -44,7 +34,6 @@ export const AICoach: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom()
-    localStorage.setItem('coach_chat_messages', JSON.stringify(messages))
   }, [messages])
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -57,14 +46,9 @@ export const AICoach: React.FC = () => {
     setSending(true)
 
     try {
-      const historyPayload = messages.map(m => ({
-        role: m.role,
-        content: m.content
-      }))
-
       const res = await api.post('/api/coach/chat', {
         message: userMessage,
-        history: historyPayload
+        chat_type: 'coach'
       })
 
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }])
@@ -109,14 +93,9 @@ export const AICoach: React.FC = () => {
     setSending(true)
 
     try {
-      const historyPayload = messages.map(m => ({
-        role: m.role,
-        content: m.content
-      }))
-
       const res = await api.post('/api/coach/chat', {
         message: promptMessage,
-        history: historyPayload
+        chat_type: 'coach'
       })
 
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }])
@@ -136,8 +115,20 @@ export const AICoach: React.FC = () => {
     }))
   }
 
+  const fetchChatHistory = async () => {
+    try {
+      const res = await api.get('/api/coach/chat/history?chat_type=coach')
+      if (res.data && res.data.messages && res.data.messages.length > 0) {
+        setMessages(res.data.messages)
+      }
+    } catch (e) {
+      console.error("Failed to fetch chat history:", e)
+    }
+  }
+
   useEffect(() => {
     fetchCoachData()
+    fetchChatHistory()
   }, [])
 
   if (loading) {
@@ -480,8 +471,13 @@ export const AICoach: React.FC = () => {
               </div>
               {messages.length > 1 && (
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (confirm("Are you sure you want to clear your chat history?")) {
+                      try {
+                        await api.delete('/api/coach/chat/history?chat_type=coach')
+                      } catch (err) {
+                        console.error("Failed to clear chat history from server:", err)
+                      }
                       setMessages([
                         { role: 'assistant', content: "Hi! I am your AI Productivity Coach. Ask me any questions about your schedule, roadmap, tasks, or time management tips!" }
                       ])
