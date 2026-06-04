@@ -7,6 +7,7 @@ from beanie import PydanticObjectId
 from app.models.user import User
 from app.models.reflection import DailyReflection
 from app.utils.auth import get_current_user
+from app.utils.rate_limit import verify_ai_rate_limit
 from app.services.ai_service import AIService
 
 router = APIRouter(prefix="/api/reflections", tags=["AI Reflection Assistant"])
@@ -18,7 +19,7 @@ class ReflectionInputSchema(BaseModel):
     q_improve: str
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def submit_reflection(data: ReflectionInputSchema, user: User = Depends(get_current_user)):
+async def submit_reflection(data: ReflectionInputSchema, user: User = Depends(verify_ai_rate_limit)):
     # Verify date string format
     try:
         datetime.strptime(data.date, "%Y-%m-%d")
@@ -49,7 +50,8 @@ async def submit_reflection(data: ReflectionInputSchema, user: User = Depends(ge
     summary_data = await AIService.generate_reflection_summary(
         q_well=data.q_well,
         q_distracted=data.q_distracted,
-        q_improve=data.q_improve
+        q_improve=data.q_improve,
+        user_id=user.id
     )
 
     reflection.ai_summary = summary_data.get("summary", "")

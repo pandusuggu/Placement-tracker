@@ -16,6 +16,7 @@ export const Reflections: React.FC = () => {
   const [reflections, setReflections] = useState<ReflectionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Form values
   const [well, setWell] = useState('')
@@ -45,6 +46,7 @@ export const Reflections: React.FC = () => {
     if (!well.trim() || !distracted.trim() || !improve.trim()) return
 
     setSaving(true)
+    setError(null)
     const todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     try {
       const res = await api.post('/api/reflections', {
@@ -61,8 +63,9 @@ export const Reflections: React.FC = () => {
       setImprove('')
       
       fetchReflections()
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
+      setError(e.response?.data?.detail || "Failed to analyze journal. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -130,6 +133,12 @@ export const Reflections: React.FC = () => {
             >
               {saving ? 'AI Analyzing Journal...' : 'Submit Reflection'}
             </button>
+
+            {error && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl text-[11px] font-semibold mt-2 text-center animate-fade-in">
+                {error}
+              </div>
+            )}
           </form>
         </div>
 

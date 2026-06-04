@@ -353,9 +353,9 @@ export const Prep: React.FC = () => {
       // Refresh readiness
       const readRes = await api.get('/api/placement/readiness')
       setReadiness(readRes.data)
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to regenerate CS questions:", e)
-      alert("AI Generation failed. Check API key configuration or try again.")
+      alert(e.response?.data?.detail || "AI Generation failed. Check API key configuration or try again.")
     } finally {
       setGeneratingSubject(null)
     }
@@ -392,9 +392,9 @@ export const Prep: React.FC = () => {
       // Refresh readiness
       const readRes = await api.get('/api/placement/readiness')
       setReadiness(readRes.data)
-    } catch (e) {
-      console.error("Failed to regenerate Aptitude questions:", e)
-      alert("AI Generation failed. Check API key configuration or try again.")
+    } catch (err: any) {
+      console.error("Failed to regenerate Aptitude questions:", err)
+      alert(err.response?.data?.detail || "AI Generation failed. Check API key configuration or try again.")
     } finally {
       setGeneratingAptitudeTopic(null)
     }
@@ -560,9 +560,9 @@ export const Prep: React.FC = () => {
       const computedScore = Math.round((completedCount / allRounds.length) * 100)
       await handleCareerUpdate('mock_interview_score', computedScore)
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      alert("Failed to shuffle questions with AI. Please check server connections and API key.")
+      alert(err.response?.data?.detail || "Failed to shuffle questions with AI. Please check server connections and API key.")
     } finally {
       setShufflingRounds(prev => ({ ...prev, [roundId]: false }))
     }
@@ -605,9 +605,10 @@ export const Prep: React.FC = () => {
       })
 
       setPrepChatMessages(prev => [...prev, { role: 'assistant', content: res.data.response }])
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      setPrepChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I had trouble processing your question. Please try again." }])
+      const detail = err.response?.data?.detail || "Sorry, I had trouble processing your question. Please try again."
+      setPrepChatMessages(prev => [...prev, { role: 'assistant', content: detail }])
     } finally {
       setPrepChatSending(false)
     }
@@ -2693,6 +2694,12 @@ export const Prep: React.FC = () => {
                   <X size={14} />
                 </button>
               </div>
+            </div>
+
+            {/* AI Guidelines Rate Limit Banner */}
+            <div className="bg-primary/5 border-b border-slate-200/60 dark:border-slate-800/60 px-4 py-2 flex items-center gap-1.5 text-[9px] text-slate-550 dark:text-slate-400 font-semibold bg-gradient-to-r from-primary/5 via-violet-500/5 to-transparent shrink-0">
+              <Sparkles size={11} className="text-primary animate-pulse shrink-0" />
+              <span>AI Guidelines: 2 requests/min • 100 requests/day • Concise answers.</span>
             </div>
 
             {/* Messages body */}

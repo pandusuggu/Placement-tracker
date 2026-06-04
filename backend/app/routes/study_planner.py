@@ -7,6 +7,7 @@ from beanie import PydanticObjectId
 from app.models.user import User
 from app.models.roadmap import StudyRoadmap
 from app.utils.auth import get_current_user
+from app.utils.rate_limit import verify_ai_rate_limit
 from app.services.ai_service import AIService
 
 router = APIRouter(prefix="/api/study-planner", tags=["AI Study Planner"])
@@ -60,7 +61,7 @@ def format_to_string(val) -> str:
     return str(val)
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def generate_roadmap(data: RoadmapInputSchema, user: User = Depends(get_current_user)):
+async def generate_roadmap(data: RoadmapInputSchema, user: User = Depends(verify_ai_rate_limit)):
     if not data.topics_to_learn:
         raise HTTPException(status_code=400, detail="Must provide at least one topic to learn")
 
@@ -70,7 +71,8 @@ async def generate_roadmap(data: RoadmapInputSchema, user: User = Depends(get_cu
         daily_hours=data.daily_available_hours,
         skill_level=data.skill_level,
         deadline=data.deadline,
-        topics_to_learn=data.topics_to_learn
+        topics_to_learn=data.topics_to_learn,
+        user_id=user.id
     )
 
     # Save to database

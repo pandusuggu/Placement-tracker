@@ -3,6 +3,7 @@ import json
 import httpx
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
+from beanie import PydanticObjectId
 from app.config.settings import settings
 
 logger = logging.getLogger("codepilot")
@@ -37,7 +38,7 @@ class AIService:
         return json.loads(text)
 
     @staticmethod
-    async def call_llm(prompt: str, is_automatic: bool = False) -> str:
+    async def call_llm(prompt: str, is_automatic: bool = False, user_id: Optional[PydanticObjectId] = None) -> str:
         """
         Sends prompt to Groq API if configured, otherwise falls back to Gemini API.
         Throws ValueError if no active API providers are available.
@@ -55,7 +56,7 @@ class AIService:
                     "messages": [
                         {
                             "role": "system", 
-                            "content": "You are a professional student technical placement coach. Return only the raw JSON payload matching the requested keys, with no surrounding markdown formatting."
+                            "content": "You are a professional student technical placement coach. Return only the raw JSON payload matching the requested keys, with no surrounding markdown formatting. Be highly concise and precise. Avoid any unnecessary introductory or concluding text."
                         },
                         {
                             "role": "user", 
@@ -63,7 +64,8 @@ class AIService:
                         }
                     ],
                     "response_format": {"type": "json_object"},  # Enable JSON Mode
-                    "temperature": 0.2
+                    "temperature": 0.2,
+                    "max_tokens": 400
                 }
                 async with httpx.AsyncClient(timeout=30.0) as client:
                     response = await client.post(
@@ -95,7 +97,7 @@ class AIService:
         if not is_automatic:
             try:
                 from app.models.ai_log import AIRequestLog
-                log_doc = AIRequestLog(request_type="llm_call")
+                log_doc = AIRequestLog(user_id=user_id, request_type="llm_call")
                 await log_doc.create()
             except Exception as le:
                 logger.error(f"Failed to log AI request in db: {le}")
@@ -108,7 +110,8 @@ class AIService:
         daily_hours: float,
         skill_level: str,
         deadline: Optional[datetime],
-        topics_to_learn: List[str]
+        topics_to_learn: List[str],
+        user_id: Optional[PydanticObjectId] = None
     ) -> Dict[str, any]:
         """
         Generates daily, weekly, and monthly roadmaps based on goals using AI.
@@ -139,7 +142,7 @@ class AIService:
         """
         
         try:
-            text = await AIService.call_llm(prompt)
+            text = await AIService.call_llm(prompt, user_id=user_id)
             return AIService._parse_json(text)
         except Exception as e:
             logger.exception("AI study planner failed. Serving custom template fallbacks.")
@@ -235,7 +238,7 @@ class AIService:
         }
 
     @staticmethod
-    async def generate_reflection_summary(q_well: str, q_distracted: str, q_improve: str) -> Dict[str, any]:
+    async def generate_reflection_summary(q_well: str, q_distracted: str, q_improve: str, user_id: Optional[PydanticObjectId] = None) -> Dict[str, any]:
         """
         Summarizes daily reflections using AI.
         """
@@ -251,7 +254,7 @@ class AIService:
         """
         
         try:
-            text = await AIService.call_llm(prompt)
+            text = await AIService.call_llm(prompt, user_id=user_id)
             return AIService._parse_json(text)
         except Exception as e:
             logger.exception("AI reflection summary failed. Using templates.")
@@ -330,7 +333,7 @@ class AIService:
         }
 
     @staticmethod
-    async def generate_cs_questions(subject: str) -> List[str]:
+    async def generate_cs_questions(subject: str, user_id: Optional[PydanticObjectId] = None) -> List[str]:
         """
         Generates 5 dynamic, randomized technical interview questions for the specified CS subject.
         """
@@ -352,7 +355,7 @@ class AIService:
         Do not output any introductory or conversational text, only the raw JSON structure.
         """
         try:
-            raw_response = await AIService.call_llm(prompt)
+            raw_response = await AIService.call_llm(prompt, user_id=user_id)
             data = AIService._parse_json(raw_response)
             if "questions" in data and isinstance(data["questions"], list) and len(data["questions"]) == 5:
                 return [str(q).strip() for q in data["questions"]]
@@ -393,7 +396,7 @@ class AIService:
         return fallbacks.get(subject, [])
 
     @staticmethod
-    async def generate_aptitude_questions(topic: str) -> List[str]:
+    async def generate_aptitude_questions(topic: str, user_id: Optional[PydanticObjectId] = None) -> List[str]:
         """
         Generates 5 dynamic, randomized aptitude questions/problems for the specified topic.
         """
@@ -422,7 +425,7 @@ class AIService:
         Do not output any introductory or conversational text, only the raw JSON structure.
         """
         try:
-            raw_response = await AIService.call_llm(prompt)
+            raw_response = await AIService.call_llm(prompt, user_id=user_id)
             data = AIService._parse_json(raw_response)
             if "questions" in data and isinstance(data["questions"], list) and len(data["questions"]) == 5:
                 return [str(q).strip() for q in data["questions"]]
@@ -456,7 +459,7 @@ class AIService:
         return fallbacks.get(topic, [])
 
     @staticmethod
-    async def analyze_resume(resume_text: str) -> Dict[str, any]:
+    async def analyze_resume(resume_text: str, user_id: Optional[PydanticObjectId] = None) -> Dict[str, any]:
         """
         Analyze a student's resume text for ATS compatibility and placement readiness.
         """
@@ -476,7 +479,7 @@ class AIService:
         Only output the JSON block.
         """
         try:
-            raw_response = await AIService.call_llm(prompt)
+            raw_response = await AIService.call_llm(prompt, user_id=user_id)
             return AIService._parse_json(raw_response)
         except Exception as e:
             logger.error(f"Failed to analyze resume with AI: {e}")
@@ -491,7 +494,7 @@ class AIService:
         }
 
     @staticmethod
-    async def generate_company_round_questions(company: str, round_name: str, round_desc: str) -> List[str]:
+    async def generate_company_round_questions(company: str, round_name: str, round_desc: str, user_id: Optional[PydanticObjectId] = None) -> List[str]:
         """
         Generates 3 randomized, realistic interview items (questions, scenarios, or coding problems)
         for the specified company's round.
@@ -514,7 +517,7 @@ class AIService:
         Do not output any introductory or conversational text, only the raw JSON structure.
         """
         try:
-            raw_response = await AIService.call_llm(prompt)
+            raw_response = await AIService.call_llm(prompt, user_id=user_id)
             data = AIService._parse_json(raw_response)
             if "questions" in data and isinstance(data["questions"], list) and len(data["questions"]) == 3:
                 return [str(q).strip() for q in data["questions"]]

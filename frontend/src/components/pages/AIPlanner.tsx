@@ -19,6 +19,7 @@ export const AIPlanner: React.FC = () => {
   const [roadmap, setRoadmap] = useState<RoadmapData | null>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Form states
   const [role, setRole] = useState('Software Engineer')
@@ -61,6 +62,7 @@ export const AIPlanner: React.FC = () => {
     if (topics.length === 0) return
 
     setGenerating(true)
+    setError(null)
     try {
       const res = await api.post('/api/study-planner', {
         target_role: role,
@@ -69,8 +71,9 @@ export const AIPlanner: React.FC = () => {
         topics_to_learn: topics
       })
       setRoadmap(res.data)
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
+      setError(e.response?.data?.detail || "AI Study Plan Generation failed. Check API key configuration or try again.")
     } finally {
       setGenerating(false)
     }
@@ -181,6 +184,12 @@ export const AIPlanner: React.FC = () => {
               <Sparkles size={14} />
               <span>{generating ? 'AI Generating Plan...' : 'Generate Study Roadmap'}</span>
             </button>
+
+            {error && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl text-[11px] font-semibold mt-2 text-center animate-fade-in">
+                {error}
+              </div>
+            )}
 
           </form>
         </div>

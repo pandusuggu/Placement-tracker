@@ -5,6 +5,7 @@ from app.models.user import User
 from app.models.analytics import PlacementScore
 from app.models.coding import CodingProgress
 from app.utils.auth import get_current_user
+from app.utils.rate_limit import verify_ai_rate_limit
 from app.services.placement_service import PlacementService
 from app.services.ai_service import AIService
 from pydantic import BaseModel
@@ -42,7 +43,7 @@ async def get_placement_readiness(user: User = Depends(get_current_user)):
 @router.post("/resume/analyze")
 async def analyze_user_resume(
     file: UploadFile = File(...),
-    user: User = Depends(get_current_user)
+    user: User = Depends(verify_ai_rate_limit)
 ):
     filename = file.filename.lower()
     if not (filename.endswith(".pdf") or filename.endswith(".txt")):
@@ -68,7 +69,7 @@ async def analyze_user_resume(
         raise HTTPException(status_code=400, detail="Could not extract text from the uploaded file. Ensure it contains readable text.")
         
     try:
-        analysis = await AIService.analyze_resume(text)
+        analysis = await AIService.analyze_resume(text, user_id=user.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
         
@@ -126,13 +127,14 @@ class CompanyRoundRegenerateRequest(BaseModel):
 @router.post("/company-rounds/regenerate")
 async def regenerate_company_round_questions(
     payload: CompanyRoundRegenerateRequest,
-    user: User = Depends(get_current_user)
+    user: User = Depends(verify_ai_rate_limit)
 ):
     try:
         questions = await AIService.generate_company_round_questions(
             payload.company,
             payload.round_name,
-            payload.round_desc
+            payload.round_desc,
+            user_id=user.id
         )
         return {"questions": questions}
     except Exception as e:

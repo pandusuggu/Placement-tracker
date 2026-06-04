@@ -7,6 +7,7 @@ from beanie import PydanticObjectId
 from app.models.user import User
 from app.models.coding import CodingProgress
 from app.utils.auth import get_current_user
+from app.utils.rate_limit import verify_ai_rate_limit
 from app.services.coding_service import CodingService
 from app.services.placement_service import PlacementService
 
@@ -349,7 +350,7 @@ async def delete_project(project_name: str, user: User = Depends(get_current_use
     return {"message": f"Project '{project_name}' deleted successfully"}
 
 @router.post("/core-subjects/regenerate")
-async def regenerate_core_subjects_questions(data: RegenerateQuestionsSchema, user: User = Depends(get_current_user)):
+async def regenerate_core_subjects_questions(data: RegenerateQuestionsSchema, user: User = Depends(verify_ai_rate_limit)):
     from app.services.ai_service import AIService
     
     progress = await CodingProgress.find_one(CodingProgress.user_id == user.id)
@@ -360,7 +361,7 @@ async def regenerate_core_subjects_questions(data: RegenerateQuestionsSchema, us
         raise HTTPException(status_code=400, detail="Invalid subject")
         
     # Call AI to generate 5 new questions
-    new_qs = await AIService.generate_cs_questions(data.subject)
+    new_qs = await AIService.generate_cs_questions(data.subject, user_id=user.id)
     if not new_qs or len(new_qs) != 5:
         raise HTTPException(status_code=500, detail="Failed to generate questions from AI")
         
@@ -380,7 +381,7 @@ async def regenerate_core_subjects_questions(data: RegenerateQuestionsSchema, us
     }
 
 @router.post("/aptitude/regenerate")
-async def regenerate_aptitude_questions(data: RegenerateAptitudeQuestionsSchema, user: User = Depends(get_current_user)):
+async def regenerate_aptitude_questions(data: RegenerateAptitudeQuestionsSchema, user: User = Depends(verify_ai_rate_limit)):
     from app.services.ai_service import AIService
     
     progress = await CodingProgress.find_one(CodingProgress.user_id == user.id)
@@ -391,7 +392,7 @@ async def regenerate_aptitude_questions(data: RegenerateAptitudeQuestionsSchema,
         raise HTTPException(status_code=400, detail="Invalid topic")
         
     # Call AI to generate 5 new aptitude questions
-    new_qs = await AIService.generate_aptitude_questions(data.topic)
+    new_qs = await AIService.generate_aptitude_questions(data.topic, user_id=user.id)
     if not new_qs or len(new_qs) != 5:
         raise HTTPException(status_code=500, detail="Failed to generate aptitude questions from AI")
         

@@ -68,9 +68,10 @@ export const AICoach: React.FC = () => {
       })
 
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }])
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I had trouble processing that request." }])
+      const detail = err.response?.data?.detail || "Sorry, I had trouble processing that request."
+      setMessages(prev => [...prev, { role: 'assistant', content: detail }])
     } finally {
       setSending(false)
     }
@@ -119,9 +120,10 @@ export const AICoach: React.FC = () => {
       })
 
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }])
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I had trouble processing that request." }])
+      const detail = err.response?.data?.detail || "Sorry, I had trouble processing that request."
+      setMessages(prev => [...prev, { role: 'assistant', content: detail }])
     } finally {
       setSending(false)
     }
@@ -490,6 +492,12 @@ export const AICoach: React.FC = () => {
                   Clear
                 </button>
               )}
+            </div>
+
+            {/* AI Guidelines Rate Limit Banner */}
+            <div className="bg-primary/5 border-b border-border-light dark:border-border-dark px-4 py-2 flex items-center gap-2 text-[10px] text-slate-600 dark:text-slate-400 font-semibold bg-gradient-to-r from-primary/5 via-violet-500/5 to-transparent shrink-0">
+              <Sparkles size={12} className="text-primary animate-pulse shrink-0" />
+              <span>AI Guidelines: 2 requests/min • 100 requests/day • Concise answers to save tokens.</span>
             </div>
 
             {/* Chat Messages scroll area */}

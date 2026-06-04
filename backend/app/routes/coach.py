@@ -14,6 +14,7 @@ from app.models.coding import CodingProgress
 from app.models.recommendation import AIRecommendation
 from app.models.roadmap import StudyRoadmap
 from app.utils.auth import get_current_user
+from app.utils.rate_limit import verify_ai_rate_limit
 from app.services.ai_service import AIService
 
 logger = logging.getLogger("codepilot")
@@ -150,7 +151,7 @@ class CoachChatInput(BaseModel):
     history: List[ChatMessage] = []
 
 @router.post("/chat")
-async def coach_chat(data: CoachChatInput, user: User = Depends(get_current_user)):
+async def coach_chat(data: CoachChatInput, user: User = Depends(verify_ai_rate_limit)):
     # 1. Fetch current study roadmap
     roadmap = await StudyRoadmap.find(StudyRoadmap.user_id == user.id).sort(-StudyRoadmap.created_at).first_or_none()
     
@@ -189,7 +190,25 @@ async def coach_chat(data: CoachChatInput, user: User = Depends(get_current_user
     Current Habits List:
     {habits_str}
     
-    Answer the user's questions about their schedule, tasks, habits, or study plan. Be supportive, motivating, and highly actionable. Keep your responses concise and formatted in readable markdown.
+    Answer the user's questions about their schedule, tasks, habits, or study plan. Be supportive, motivating, and highly actionable. Keep your responses concise (maximum 400-500 words) and formatted in readable markdown.
+    Avoid any unnecessary introductory or concluding text (like greetings, pleasantries, or wrapping up statements) to save tokens.
+    
+    CRITICAL FORMATTING INSTRUCTIONS:
+    - If the user's query is about a CODING PROBLEM, you MUST format your response EXACTLY as follows:
+      1. Intuition
+      2. Approach
+      3. Java Solution
+      4. Time Complexity
+      5. Space Complexity
+      Keep the explanation concise and under 500 words.
+      
+    - If the user's query is about any OTHER SUBJECT (e.g., core CS subjects like DBMS, OS, Networking, OOP, or aptitude/verbal topics), you MUST format your response EXACTLY as follows:
+      1. Definition
+      2. Key Concepts
+      3. Interview Explanation
+      4. Example
+      5. Important Points
+      Keep the answer concise and under 500 words.
     """
 
     # Formulate messages for Groq API
@@ -210,7 +229,8 @@ async def coach_chat(data: CoachChatInput, user: User = Depends(get_current_user
             payload = {
                 "model": "llama-3.1-8b-instant",
                 "messages": messages,
-                "temperature": 0.4
+                "temperature": 0.4,
+                "max_tokens": 500
             }
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
@@ -225,7 +245,7 @@ async def coach_chat(data: CoachChatInput, user: User = Depends(get_current_user
                     # Log AI Request in database
                     try:
                         from app.models.ai_log import AIRequestLog
-                        log_doc = AIRequestLog(request_type="coach_chat")
+                        log_doc = AIRequestLog(user_id=user.id, request_type="coach_chat")
                         await log_doc.create()
                     except Exception as le:
                         logger.error(f"Failed to log AI coach chat request: {le}")
