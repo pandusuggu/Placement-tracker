@@ -221,6 +221,14 @@ async def coach_chat(data: CoachChatInput, user: User = Depends(get_current_user
                 if response.status_code == 200:
                     res_json = response.json()
                     response_text = res_json["choices"][0]["message"]["content"].strip()
+                    
+                    # Log AI Request in database
+                    try:
+                        from app.models.ai_log import AIRequestLog
+                        log_doc = AIRequestLog(request_type="coach_chat")
+                        await log_doc.create()
+                    except Exception as le:
+                        logger.error(f"Failed to log AI coach chat request: {le}")
                 else:
                     logger.error(f"Groq API chat failed: {response.text}")
         except Exception as e:

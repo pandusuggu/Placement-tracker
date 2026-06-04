@@ -37,7 +37,7 @@ class AIService:
         return json.loads(text)
 
     @staticmethod
-    async def call_llm(prompt: str) -> str:
+    async def call_llm(prompt: str, is_automatic: bool = False) -> str:
         """
         Sends prompt to Groq API if configured, otherwise falls back to Gemini API.
         Throws ValueError if no active API providers are available.
@@ -92,12 +92,13 @@ class AIService:
             raise ValueError("No active AI provider keys configured in settings or all API calls failed.")
 
         # Log AI Request in database
-        try:
-            from app.models.ai_log import AIRequestLog
-            log_doc = AIRequestLog(request_type="llm_call")
-            await log_doc.create()
-        except Exception as le:
-            logger.error(f"Failed to log AI request in db: {le}")
+        if not is_automatic:
+            try:
+                from app.models.ai_log import AIRequestLog
+                log_doc = AIRequestLog(request_type="llm_call")
+                await log_doc.create()
+            except Exception as le:
+                logger.error(f"Failed to log AI request in db: {le}")
 
         return result_text
  
@@ -205,7 +206,7 @@ class AIService:
         """
         
         try:
-            text = await AIService.call_llm(prompt)
+            text = await AIService.call_llm(prompt, is_automatic=True)
             return AIService._parse_json(text)
         except Exception as e:
             logger.exception("AI productivity analysis failed. Using custom template calculator.")
@@ -293,7 +294,7 @@ class AIService:
         "schedule_adjustments": ["list of 2 concrete tips for schedule redesign"]
         """
         try:
-            text = await AIService.call_llm(prompt)
+            text = await AIService.call_llm(prompt, is_automatic=True)
             return AIService._parse_json(text)
         except Exception as e:
             logger.exception("AI burnout engine failed. Calculating stats internally.")
