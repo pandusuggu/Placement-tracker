@@ -28,6 +28,7 @@ class ProfileUpdateSchema(BaseModel):
     name: Optional[str] = None
     college: Optional[str] = None
     branch: Optional[str] = None
+    cgpa: Optional[float] = None
     graduation_year: Optional[int] = None
     target_role: Optional[str] = None
     daily_available_hours: Optional[float] = None
@@ -78,6 +79,7 @@ async def register(data: RegisterSchema):
         leetcode_username="",
         gfg_username="",
         hackerrank_username="",
+        codechef_username="",
         dsa_progress={},
         core_subjects_progress={"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0},
         aptitude_progress={"Quantitative Aptitude": 0.0, "Logical Reasoning": 0.0, "Verbal Ability": 0.0},
@@ -122,6 +124,7 @@ async def login(data: LoginSchema):
             "avatar": user.avatar,
             "college": user.college,
             "branch": user.branch,
+            "cgpa": getattr(user, "cgpa", None),
             "graduation_year": user.graduation_year,
             "target_role": user.target_role,
             "daily_available_hours": user.daily_available_hours,
@@ -138,6 +141,7 @@ async def get_me(user: User = Depends(get_current_user)):
         "avatar": user.avatar,
         "college": user.college,
         "branch": user.branch,
+        "cgpa": getattr(user, "cgpa", None),
         "graduation_year": user.graduation_year,
         "target_role": user.target_role,
         "daily_available_hours": user.daily_available_hours,
@@ -153,6 +157,8 @@ async def update_profile(data: ProfileUpdateSchema, user: User = Depends(get_cur
         user.college = data.college
     if data.branch is not None:
         user.branch = data.branch
+    if data.cgpa is not None:
+        user.cgpa = data.cgpa
     if data.graduation_year is not None:
         user.graduation_year = data.graduation_year
     if data.target_role is not None:
@@ -172,6 +178,7 @@ async def update_profile(data: ProfileUpdateSchema, user: User = Depends(get_cur
             "avatar": user.avatar,
             "college": user.college,
             "branch": user.branch,
+            "cgpa": getattr(user, "cgpa", None),
             "graduation_year": user.graduation_year,
             "target_role": user.target_role,
             "daily_available_hours": user.daily_available_hours
@@ -208,6 +215,7 @@ async def google_login(data: GoogleLoginSchema):
             leetcode_username="",
             gfg_username="",
             hackerrank_username="",
+            codechef_username="",
             dsa_progress={},
             core_subjects_progress={"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0},
             aptitude_progress={"Quantitative Aptitude": 0.0, "Logical Reasoning": 0.0, "Verbal Ability": 0.0},
@@ -226,6 +234,7 @@ async def google_login(data: GoogleLoginSchema):
             "avatar": user.avatar,
             "college": user.college,
             "branch": user.branch,
+            "cgpa": getattr(user, "cgpa", None),
             "graduation_year": user.graduation_year,
             "target_role": user.target_role,
             "daily_available_hours": user.daily_available_hours

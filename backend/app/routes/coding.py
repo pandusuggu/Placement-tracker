@@ -17,6 +17,7 @@ class UsernamesSchema(BaseModel):
     leetcode_username: Optional[str] = ""
     gfg_username: Optional[str] = ""
     hackerrank_username: Optional[str] = ""
+    codechef_username: Optional[str] = ""
 
 class DSATopicUpdateSchema(BaseModel):
     topic: str  # e.g., "Arrays", "Strings"
@@ -127,6 +128,7 @@ async def get_progress(user: User = Depends(get_current_user)):
             leetcode_username="",
             gfg_username="",
             hackerrank_username="",
+            codechef_username="",
             dsa_progress={},
             core_subjects_progress={"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0},
             core_subjects_questions=DEFAULT_CS_QUESTIONS,
@@ -214,6 +216,7 @@ async def update_usernames(data: UsernamesSchema, user: User = Depends(get_curre
     progress.leetcode_username = data.leetcode_username
     progress.gfg_username = data.gfg_username
     progress.hackerrank_username = data.hackerrank_username
+    progress.codechef_username = data.codechef_username
     
     await progress.save()
     # Trigger coding stats sync

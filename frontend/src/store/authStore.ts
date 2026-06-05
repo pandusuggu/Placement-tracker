@@ -7,6 +7,7 @@ interface UserProfile {
   avatar?: string
   college?: string
   branch?: string
+  cgpa?: number
   graduation_year?: number
   target_role: string
   daily_available_hours: number

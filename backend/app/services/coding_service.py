@@ -101,6 +101,56 @@ class CodingService:
             except Exception as e:
                 logger.warning(f"Failed to fetch GeeksforGeeks stats for '{username}': {e}")
         
+        # Query CodeChef profiles
+        if platform.lower() == "codechef":
+            try:
+                # 1. Try public CodeChef API wrapper
+                url = f"https://codechef-api.vercel.app/{username}"
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.get(url)
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get("success"):
+                            fully_solved = data.get("fullySolved", {}).get("count", 0)
+                            partially_solved = data.get("partiallySolved", {}).get("count", 0)
+                            total = fully_solved + partially_solved
+                            easy = int(total * 0.6)
+                            medium = int(total * 0.3)
+                            hard = total - easy - medium
+                            return {
+                                "easy": easy,
+                                "medium": medium,
+                                "hard": hard
+                            }
+            except Exception as e:
+                logger.warning(f"Failed to fetch CodeChef stats for '{username}' via API wrapper: {e}")
+
+            # 2. Try scraping CodeChef profile page
+            try:
+                import re
+                url = f"https://www.codechef.com/users/{username}"
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Referer": "https://www.codechef.com/"
+                }
+                async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                    response = await client.get(url, headers=headers)
+                    if response.status_code == 200:
+                        html = response.text
+                        match = re.search(r'Fully Solved\s*\(\s*(\d+)\s*\)', html)
+                        if match:
+                            solved = int(match.group(1))
+                            easy = int(solved * 0.6)
+                            medium = int(solved * 0.3)
+                            hard = solved - easy - medium
+                            return {
+                                "easy": easy,
+                                "medium": medium,
+                                "hard": hard
+                            }
+            except Exception as e:
+                logger.warning(f"Failed to scrape CodeChef profile for '{username}': {e}")
+        
         # Default stable mock fallback simulator
         seed = sum(ord(c) for c in username)
         easy = (seed % 40) + 15
@@ -145,6 +195,27 @@ class CodingService:
             progress.leetcode_medium_solved = 0
             progress.leetcode_hard_solved = 0
 
+        # Fetch CodeChef
+        cc_diff = 0
+        if getattr(progress, "codechef_username", None):
+            cc = await CodingService.fetch_platform_stats("codechef", progress.codechef_username)
+            old_cc_total = (getattr(progress, "codechef_easy_solved", 0)) + (getattr(progress, "codechef_medium_solved", 0)) + (getattr(progress, "codechef_hard_solved", 0))
+            new_cc_total = cc["easy"] + cc["medium"] + cc["hard"]
+            if old_cc_total > 0:
+                cc_diff = max(new_cc_total - old_cc_total, 0)
+            
+            progress.codechef_easy_solved = cc["easy"]
+            progress.codechef_medium_solved = cc["medium"]
+            progress.codechef_hard_solved = cc["hard"]
+            total_easy += cc["easy"]
+            total_medium += cc["medium"]
+            total_hard += cc["hard"]
+            changed = True
+        else:
+            progress.codechef_easy_solved = 0
+            progress.codechef_medium_solved = 0
+            progress.codechef_hard_solved = 0
+
         # GeeksforGeeks and HackerRank profiles are removed (only LeetCode is synced)
         progress.gfg_easy_solved = 0
         progress.gfg_medium_solved = 0
@@ -154,7 +225,7 @@ class CodingService:
         progress.hackerrank_hard_solved = 0
 
         if changed:
-            diff = lc_diff
+            diff = lc_diff + cc_diff
 
             progress.easy_solved = total_easy
             progress.medium_solved = total_medium

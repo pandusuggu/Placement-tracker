@@ -10,6 +10,7 @@ class User(Document):
     avatar: Optional[str] = None
     college: Optional[str] = None
     branch: Optional[str] = None
+    cgpa: Optional[float] = None
     graduation_year: Optional[int] = None
     target_role: Optional[str] = "Software Engineer"
     daily_available_hours: Optional[float] = 4.0

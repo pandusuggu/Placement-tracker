@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Bell, Moon, Sun, Search, CheckSquare, Flame, Timer, GraduationCap, Menu } from 'lucide-react'
 import { useThemeStore } from '../../store/themeStore'
+import { useAuthStore } from '../../store/authStore'
 import api from '../../services/api'
 
 interface HeaderProps {
@@ -20,6 +21,7 @@ interface NotificationItem {
 
 export const Header: React.FC<HeaderProps> = ({ currentTab, setCurrentTab, setSidebarOpen }) => {
   const { theme, toggleTheme } = useThemeStore()
+  const { user } = useAuthStore()
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
@@ -172,6 +174,19 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, setCurrentTab, setSi
               </div>
             )}
           </div>
+
+          {/* User Profile Trigger Button */}
+          <button
+            onClick={() => setCurrentTab('profile')}
+            className={`w-10 h-10 rounded-xl border flex items-center justify-center font-black text-xs select-none transition-all shadow-sm transform active:scale-95 ${
+              currentTab === 'profile'
+                ? 'bg-primary text-white border-primary shadow-blue'
+                : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+            title="User Profile"
+          >
+            {user?.name?.charAt(0).toUpperCase() || 'U'}
+          </button>
 
         </div>
       </header>

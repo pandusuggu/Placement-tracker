@@ -13,6 +13,7 @@ class CodingProgress(Document):
     leetcode_username: Optional[str] = None
     gfg_username: Optional[str] = None
     hackerrank_username: Optional[str] = None
+    codechef_username: Optional[str] = None
     
     easy_solved: int = 0
     medium_solved: int = 0
@@ -29,6 +30,10 @@ class CodingProgress(Document):
     hackerrank_easy_solved: int = 0
     hackerrank_medium_solved: int = 0
     hackerrank_hard_solved: int = 0
+    
+    codechef_easy_solved: int = 0
+    codechef_medium_solved: int = 0
+    codechef_hard_solved: int = 0
     
     current_streak: int = 0
     longest_streak: int = 0

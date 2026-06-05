@@ -20,6 +20,7 @@ import { Reflections } from './components/pages/Reflections'
 import { Leaderboard } from './components/pages/Leaderboard'
 import { Admin } from './components/pages/Admin'
 import { Community } from './components/pages/Community'
+import { Profile } from './components/pages/Profile'
 
 export const App: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore()
@@ -66,6 +67,8 @@ export const App: React.FC = () => {
         return <AICoach />
       case 'reflections':
         return <Reflections />
+      case 'profile':
+        return <Profile />
       default:
         return <Dashboard />
     }

@@ -105,15 +105,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, sid
 
       {/* User Session profile Footer */}
       <div className="p-4 border-t border-border-light dark:border-border-dark space-y-3">
-        <div className="flex items-center gap-3 p-2">
+        <button
+          onClick={() => {
+            setCurrentTab('profile')
+            setSidebarOpen(false)
+          }}
+          className="w-full flex items-center text-left gap-3 p-2 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-850"
+        >
           <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 select-none">
             {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
-          <div className="overflow-hidden">
+          <div className="overflow-hidden flex-1">
             <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{user?.name}</h4>
             <p className="text-xs text-slate-500 dark:text-slate-500 truncate">{user?.email}</p>
           </div>
-        </div>
+        </button>
 
         <button
           onClick={logout}
