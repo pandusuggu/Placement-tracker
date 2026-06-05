@@ -240,3 +240,71 @@ async def google_login(data: GoogleLoginSchema):
             "daily_available_hours": user.daily_available_hours
         }
     }
+
+@router.get("/profile/{user_id}")
+async def get_public_profile(user_id: str, current_user: User = Depends(get_current_user)):
+    try:
+        obj_id = PydanticObjectId(user_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid user ID format")
+        
+    user = await User.get(obj_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Get coding progress
+    progress = await CodingProgress.find_one(CodingProgress.user_id == user.id)
+    progress_data = None
+    if progress:
+        from app.routes.coding import get_progress_response
+        progress_data = get_progress_response(progress)
+        
+    # Get placement readiness
+    from app.services.placement_service import PlacementService
+    readiness_data = None
+    if progress:
+        # Get readiness score
+        score_doc = await PlacementService.create_or_update_placement_score(user.id, progress)
+        if score_doc:
+            readiness_data = {
+                "score": score_doc.score,
+                "readiness_level": score_doc.readiness_level,
+                "resume_ats_score": score_doc.resume_ats_score,
+                "resume_strengths": score_doc.resume_strengths,
+                "resume_improvements": score_doc.resume_improvements,
+                "resume_suggestions": score_doc.resume_suggestions
+            }
+            
+    # Get weekly rank & score
+    from app.routes.leaderboard import get_weekly_leaderboard
+    weekly_rank = None
+    weekly_score = 0
+    try:
+        leaderboard = await get_weekly_leaderboard(user)
+        for item in leaderboard:
+            if item["user_id"] == user_id:
+                weekly_rank = item["rank"]
+                weekly_score = item["score"]
+                break
+    except Exception:
+        pass
+        
+    return {
+        "user": {
+            "id": str(user.id),
+            "name": user.name,
+            "email": user.email,
+            "avatar": user.avatar,
+            "college": user.college,
+            "branch": user.branch,
+            "cgpa": getattr(user, "cgpa", None),
+            "graduation_year": user.graduation_year,
+            "target_role": user.target_role,
+            "daily_available_hours": user.daily_available_hours
+        },
+        "progress": progress_data,
+        "readiness": readiness_data,
+        "weekly_rank": weekly_rank,
+        "weekly_score": weekly_score
+    }
+

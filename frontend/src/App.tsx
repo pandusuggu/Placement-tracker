@@ -29,6 +29,7 @@ export const App: React.FC = () => {
   // Manage tabs internally to avoid routing friction on local previews
   const [currentTab, setCurrentTab] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null)
 
   useEffect(() => {
     initTheme()
@@ -37,6 +38,12 @@ export const App: React.FC = () => {
   // If not signed in, force authentication forms
   if (!isAuthenticated) {
     return <Auth />
+  }
+
+  // Set tab and reset viewing user ID
+  const handleSetTab = (tab: string) => {
+    setCurrentTab(tab)
+    setViewingUserId(null)
   }
 
   // Render active workspace tabs
@@ -55,7 +62,14 @@ export const App: React.FC = () => {
       case 'prep':
         return <Prep />
       case 'leaderboard':
-        return <Leaderboard />
+        return (
+          <Leaderboard 
+            onViewProfile={(userId) => {
+              setViewingUserId(userId)
+              setCurrentTab('profile')
+            }} 
+          />
+        )
       case 'community':
         return <Community />
       case 'admin':
@@ -68,7 +82,7 @@ export const App: React.FC = () => {
       case 'reflections':
         return <Reflections />
       case 'profile':
-        return <Profile />
+        return <Profile viewingUserId={viewingUserId} setViewingUserId={setViewingUserId} />
       default:
         return <Dashboard />
     }
@@ -87,7 +101,7 @@ export const App: React.FC = () => {
       {/* Navigation Panels */}
       <Sidebar 
         currentTab={currentTab} 
-        setCurrentTab={setCurrentTab} 
+        setCurrentTab={handleSetTab} 
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />
@@ -96,7 +110,7 @@ export const App: React.FC = () => {
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden lg:pl-64">
         <Header 
           currentTab={currentTab} 
-          setCurrentTab={setCurrentTab} 
+          setCurrentTab={handleSetTab} 
           setSidebarOpen={setSidebarOpen}
         />
         

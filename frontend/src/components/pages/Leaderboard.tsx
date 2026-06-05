@@ -15,7 +15,11 @@ interface LeaderboardItem {
   rank: number
 }
 
-export const Leaderboard: React.FC = () => {
+interface LeaderboardProps {
+  onViewProfile?: (userId: string) => void
+}
+
+export const Leaderboard: React.FC<LeaderboardProps> = ({ onViewProfile }) => {
   const [items, setItems] = useState<LeaderboardItem[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -88,9 +92,12 @@ export const Leaderboard: React.FC = () => {
           {/* Top 3 Podium Cards */}
           {podium.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
-              {/* 2nd Place */}
+                  {/* 2nd Place */}
               {podium[1] && (
-                <div className="glass-card p-6 border-slate-200/50 dark:border-slate-800/50 flex flex-col items-center text-center relative overflow-hidden order-2 md:order-1 h-[260px] justify-between">
+                <div 
+                  onClick={() => onViewProfile?.(podium[1].user_id)}
+                  className="glass-card p-6 border-slate-200/50 dark:border-slate-800/50 flex flex-col items-center text-center relative overflow-hidden order-2 md:order-1 h-[260px] justify-between cursor-pointer hover:border-primary/30 hover:scale-[1.01] transition-all duration-300"
+                >
                   <div className="absolute top-3 left-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-500 rounded-full w-7 h-7 flex items-center justify-center text-xs font-black shadow-inner">
                     #2
                   </div>
@@ -117,7 +124,10 @@ export const Leaderboard: React.FC = () => {
 
               {/* 1st Place */}
               {podium[0] && (
-                <div className="glass-card p-6 border-primary/30 bg-primary/5 dark:bg-primary/5 flex flex-col items-center text-center relative overflow-hidden order-1 md:order-2 h-[300px] justify-between shadow-blue">
+                <div 
+                  onClick={() => onViewProfile?.(podium[0].user_id)}
+                  className="glass-card p-6 border-primary/30 bg-primary/5 dark:bg-primary/5 flex flex-col items-center text-center relative overflow-hidden order-1 md:order-2 h-[300px] justify-between shadow-blue cursor-pointer hover:border-primary/50 hover:scale-[1.01] transition-all duration-300"
+                >
                   <div className="absolute top-3 left-3 bg-amber-500/20 border border-amber-500/30 text-amber-500 rounded-full w-8 h-8 flex items-center justify-center text-xs font-black shadow-md">
                     👑
                   </div>
@@ -144,8 +154,11 @@ export const Leaderboard: React.FC = () => {
 
               {/* 3rd Place */}
               {podium[2] && (
-                <div className="glass-card p-6 border-slate-200/50 dark:border-slate-800/50 flex flex-col items-center text-center relative overflow-hidden order-3 h-[240px] justify-between">
-                  <div className="absolute top-3 left-3 bg-amber-600/10 border border-amber-600/20 text-amber-600 rounded-full w-7 h-7 flex items-center justify-center text-xs font-black shadow-inner">
+                <div 
+                  onClick={() => onViewProfile?.(podium[2].user_id)}
+                  className="glass-card p-6 border-slate-200/50 dark:border-slate-800/50 flex flex-col items-center text-center relative overflow-hidden order-3 h-[240px] justify-between cursor-pointer hover:border-primary/30 hover:scale-[1.01] transition-all duration-300"
+                >
+                  <div className="absolute top-3 left-3 bg-amber-650/10 border border-amber-650/20 text-amber-600 rounded-full w-7 h-7 flex items-center justify-center text-xs font-black shadow-inner">
                     #3
                   </div>
                   <div className="flex flex-col items-center space-y-3 pt-4">
@@ -202,7 +215,8 @@ export const Leaderboard: React.FC = () => {
                     {filteredItems.map((item) => (
                       <tr 
                         key={item.user_id} 
-                        className={`hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-all ${item.rank === 1 ? 'bg-primary/5 dark:bg-primary/5' : ''}`}
+                        onClick={() => onViewProfile?.(item.user_id)}
+                        className={`cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-900/40 transition-all ${item.rank === 1 ? 'bg-primary/5 dark:bg-primary/5' : ''}`}
                       >
                         <td className="p-4 text-center">
                           <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full font-bold text-[11px] ${

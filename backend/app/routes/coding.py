@@ -205,7 +205,22 @@ async def get_progress(user: User = Depends(get_current_user)):
         if need_save:
             await progress.save()
         
-    return get_progress_response(progress)
+    res = get_progress_response(progress)
+    
+    # Calculate weekly rank & score
+    from app.routes.leaderboard import get_weekly_leaderboard
+    try:
+        leaderboard = await get_weekly_leaderboard(user)
+        for item in leaderboard:
+            if item["user_id"] == str(user.id):
+                res["weekly_rank"] = item["rank"]
+                res["weekly_score"] = item["score"]
+                break
+    except Exception:
+        res["weekly_rank"] = None
+        res["weekly_score"] = 0
+        
+    return res
 
 @router.put("/usernames")
 async def update_usernames(data: UsernamesSchema, user: User = Depends(get_current_user)):
