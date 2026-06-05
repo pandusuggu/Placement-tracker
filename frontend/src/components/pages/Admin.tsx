@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Shield, RefreshCw, Users, Activity, Search, Clock, Trash2, CheckSquare, Brain, MessageSquare, BookOpen } from 'lucide-react'
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import api from '../../services/api'
 
 interface AdminUserItem {
@@ -14,6 +15,17 @@ interface AdminUserItem {
   last_active: string
 }
 
+interface DailyStatItem {
+  date: string
+  active_users: number
+  registrations: number
+  ai_queries: number
+  messages_sent: number
+  tasks_created: number
+  study_plans: number
+  displayDate?: string
+}
+
 interface AdminStats {
   total_users: number
   online_now: number
@@ -23,6 +35,7 @@ interface AdminStats {
   total_messages: number
   total_study_plans: number
   users: AdminUserItem[]
+  daily_stats: DailyStatItem[]
 }
 
 export const Admin: React.FC = () => {
@@ -106,6 +119,22 @@ export const Admin: React.FC = () => {
       return false
     }
   }
+
+  // Format short date for charts (e.g. "2026-06-05" -> "05 Jun")
+  const chartData = stats?.daily_stats?.map(item => {
+    try {
+      const parts = item.date.split('-')
+      const day = parts[2]
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const monthIndex = parseInt(parts[1]) - 1
+      return {
+        ...item,
+        displayDate: `${day} ${months[monthIndex]}`
+      }
+    } catch (e) {
+      return { ...item, displayDate: item.date }
+    }
+  }) || []
 
 
   const filteredUsers = stats?.users.filter(user => 
@@ -229,6 +258,78 @@ export const Admin: React.FC = () => {
               </div>
               <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-inner">
                 <BookOpen size={24} />
+              </div>
+            </div>
+          </div>
+
+          {/* Weekly Performance Analytics Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* User Activity & Growth Chart */}
+            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80">
+              <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200 mb-4 uppercase tracking-wider flex items-center gap-2">
+                <Users size={16} className="text-primary" />
+                <span>User Activity & Growth Trends</span>
+              </h3>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="activeColor" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="regColor" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b"/>
+                    <XAxis dataKey="displayDate" stroke="#64748b" fontSize={10} fontWeight={500}/>
+                    <YAxis stroke="#64748b" fontSize={10} fontWeight={500} allowDecimals={false}/>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#131926', 
+                        borderColor: '#1e293b',
+                        borderRadius: '12px',
+                        color: '#f8fafc',
+                        fontSize: '11px'
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                    <Area type="monotone" dataKey="active_users" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#activeColor)" name="Active Users" />
+                    <Area type="monotone" dataKey="registrations" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#regColor)" name="Registrations" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* AI Coach & Platform Usage Chart */}
+            <div className="glass-card p-6 border-slate-200 dark:border-slate-800/80">
+              <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200 mb-4 uppercase tracking-wider flex items-center gap-2">
+                <Brain size={16} className="text-primary animate-pulse" />
+                <span>AI & Messaging Platform Activity</span>
+              </h3>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b"/>
+                    <XAxis dataKey="displayDate" stroke="#64748b" fontSize={10} fontWeight={500}/>
+                    <YAxis stroke="#64748b" fontSize={10} fontWeight={500} allowDecimals={false}/>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#131926', 
+                        borderColor: '#1e293b',
+                        borderRadius: '12px',
+                        color: '#f8fafc',
+                        fontSize: '11px'
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                    <Bar dataKey="ai_queries" fill="#3b82f6" radius={[4, 4, 0, 0]} name="AI Request Logs" />
+                    <Bar dataKey="messages_sent" fill="#a855f7" radius={[4, 4, 0, 0]} name="Chat Messages" />
+                    <Bar dataKey="study_plans" fill="#ec4899" radius={[4, 4, 0, 0]} name="Study Plans" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>

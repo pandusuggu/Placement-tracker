@@ -70,6 +70,52 @@ async def get_admin_stats(admin: User = Depends(require_admin)):
             "last_active": getattr(u, "last_active", u.created_at)
         })
         
+    # 8. Weekly stats calculation (last 7 days)
+    daily_stats = []
+    now = datetime.utcnow()
+    for i in range(6, -1, -1):
+        day = (now - timedelta(days=i)).date()
+        start_dt = datetime.combine(day, datetime.min.time())
+        end_dt = datetime.combine(day, datetime.max.time())
+        
+        active_user_ids = set()
+        
+        # Users active on this day (by last_active)
+        users_active = await User.find(User.last_active >= start_dt, User.last_active <= end_dt).to_list()
+        active_user_ids.update(u.id for u in users_active)
+        
+        # Tasks created on this day
+        tasks_on_day = await Task.find(Task.created_at >= start_dt, Task.created_at <= end_dt).to_list()
+        active_user_ids.update(t.user_id for t in tasks_on_day)
+        
+        # Pomodoro sessions recorded on this day
+        sessions = await PomodoroSession.find(PomodoroSession.created_at >= start_dt, PomodoroSession.created_at <= end_dt).to_list()
+        active_user_ids.update(s.user_id for s in sessions)
+        
+        # Messages sent on this day
+        messages = await ChatMessage.find(ChatMessage.created_at >= start_dt, ChatMessage.created_at <= end_dt).to_list()
+        active_user_ids.update(m.user_id for m in messages)
+        
+        # AI Queries generated on this day
+        ai_logs = await AIRequestLog.find(AIRequestLog.created_at >= start_dt, AIRequestLog.created_at <= end_dt).to_list()
+        active_user_ids.update(l.user_id for l in ai_logs if l.user_id)
+        
+        # User registrations on this day
+        regs = await User.find(User.created_at >= start_dt, User.created_at <= end_dt).count()
+        
+        # Study roadmaps generated on this day
+        plans = await StudyRoadmap.find(StudyRoadmap.created_at >= start_dt, StudyRoadmap.created_at <= end_dt).count()
+        
+        daily_stats.append({
+            "date": day.strftime("%Y-%m-%d"),
+            "active_users": len(active_user_ids),
+            "registrations": regs,
+            "ai_queries": len(ai_logs),
+            "messages_sent": len(messages),
+            "tasks_created": len(tasks_on_day),
+            "study_plans": plans
+        })
+        
     return {
         "total_users": total_users,
         "online_now": online_now,
@@ -78,7 +124,8 @@ async def get_admin_stats(admin: User = Depends(require_admin)):
         "total_ai_queries": total_ai_queries,
         "total_messages": total_messages,
         "total_study_plans": total_study_plans,
-        "users": users_list
+        "users": users_list,
+        "daily_stats": daily_stats
     }
 
 @router.delete("/users/{user_id}")
