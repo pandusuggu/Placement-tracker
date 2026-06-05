@@ -114,9 +114,14 @@ class CodingService:
                             fully_solved = data.get("fullySolved", {}).get("count", 0)
                             partially_solved = data.get("partiallySolved", {}).get("count", 0)
                             total = fully_solved + partially_solved
-                            easy = int(total * 0.6)
-                            medium = int(total * 0.3)
-                            hard = total - easy - medium
+                            if total == 1:
+                                easy, medium, hard = 1, 0, 0
+                            elif total == 2:
+                                easy, medium, hard = 1, 1, 0
+                            else:
+                                easy = int(total * 0.6)
+                                medium = int(total * 0.3)
+                                hard = total - easy - medium
                             return {
                                 "easy": easy,
                                 "medium": medium,
@@ -137,12 +142,24 @@ class CodingService:
                     response = await client.get(url, headers=headers)
                     if response.status_code == 200:
                         html = response.text
-                        match = re.search(r'Fully Solved\s*\(\s*(\d+)\s*\)', html)
+                        solved = None
+                        match = re.search(r'Total Problems Solved:\s*(\d+)', html, re.IGNORECASE)
                         if match:
                             solved = int(match.group(1))
-                            easy = int(solved * 0.6)
-                            medium = int(solved * 0.3)
-                            hard = solved - easy - medium
+                        else:
+                            match = re.search(r'Fully Solved\s*\(\s*(\d+)\s*\)', html)
+                            if match:
+                                solved = int(match.group(1))
+                        
+                        if solved is not None:
+                            if solved == 1:
+                                easy, medium, hard = 1, 0, 0
+                            elif solved == 2:
+                                easy, medium, hard = 1, 1, 0
+                            else:
+                                easy = int(solved * 0.6)
+                                medium = int(solved * 0.3)
+                                hard = solved - easy - medium
                             return {
                                 "easy": easy,
                                 "medium": medium,
