@@ -64,6 +64,8 @@ class CodingProgress(Document):
     aptitude_total_generated: Dict[str, int] = Field(default_factory=dict)
     active_core_subjects_progress: Dict[str, float] = Field(default_factory=dict)
     active_aptitude_progress: Dict[str, float] = Field(default_factory=dict)
+    active_core_subjects_checked: Dict[str, List[int]] = Field(default_factory=dict)
+    active_aptitude_checked: Dict[str, List[int]] = Field(default_factory=dict)
     
     # Project progress: list of dicts: [{"name": "E-Commerce", "completion_percentage": 75}]
     projects_progress: List[dict] = Field(default_factory=list)

@@ -47,6 +47,8 @@ interface ProgressData {
   aptitude_total_generated?: Record<string, number>
   active_core_subjects_progress?: Record<string, number>
   active_aptitude_progress?: Record<string, number>
+  active_core_subjects_checked?: Record<string, number[]>
+  active_aptitude_checked?: Record<string, number[]>
   resume_status: string
   mock_interview_score: number
 }
@@ -355,17 +357,42 @@ export const Prep: React.FC = () => {
 
   // Helper: check if a theoretical question is checked
   const isCSQuestionChecked = (subject: string, index: number) => {
-    const progressPercent = progress?.active_core_subjects_progress?.[subject] !== undefined
-      ? (progress.active_core_subjects_progress[subject] || 0)
-      : (progress?.core_subjects_progress?.[subject] || 0)
-    return (index * 20) < progressPercent
+    const checkedIndices = progress?.active_core_subjects_checked?.[subject] || []
+    return checkedIndices.includes(index)
   }
 
   // Toggle check on a theoretical question
   const handleToggleCSQuestion = async (subject: string, index: number) => {
-    const isCurrentlyChecked = isCSQuestionChecked(subject, index)
-    const newPercent = isCurrentlyChecked ? index * 20 : (index + 1) * 20
-    await handleCoreSliderChange(subject, newPercent)
+    const checkedIndices = progress?.active_core_subjects_checked?.[subject] || []
+    const isCurrentlyChecked = checkedIndices.includes(index)
+    let newCheckedIndices;
+    if (isCurrentlyChecked) {
+      newCheckedIndices = checkedIndices.filter(i => i !== index)
+    } else {
+      newCheckedIndices = [...checkedIndices, index]
+    }
+    
+    // We update UI optimistically
+    if (progress) {
+      setProgress({
+        ...progress,
+        active_core_subjects_checked: {
+          ...(progress.active_core_subjects_checked || {}),
+          [subject]: newCheckedIndices
+        }
+      })
+    }
+    
+    try {
+      const res = await api.post('/api/coding/core-subjects', { subject, completion_percentage: 0, checked_indices: newCheckedIndices })
+      if (res.data.progress) {
+        setProgress(res.data.progress)
+      }
+      const readRes = await api.get('/api/placement/readiness')
+      setReadiness(readRes.data)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const [generatingSubject, setGeneratingSubject] = useState<string | null>(null)
@@ -392,16 +419,41 @@ export const Prep: React.FC = () => {
   }
 
   const isAptitudeQuestionChecked = (topic: string, index: number) => {
-    const progressPercent = progress?.active_aptitude_progress?.[topic] !== undefined
-      ? (progress.active_aptitude_progress[topic] || 0)
-      : (progress?.aptitude_progress?.[topic] || 0)
-    return (index * 20) < progressPercent
+    const checkedIndices = progress?.active_aptitude_checked?.[topic] || []
+    return checkedIndices.includes(index)
   }
 
   const handleToggleAptitudeQuestion = async (topic: string, index: number) => {
-    const isCurrentlyChecked = isAptitudeQuestionChecked(topic, index)
-    const newPercent = isCurrentlyChecked ? index * 20 : (index + 1) * 20
-    await handleAptitudeSliderChange(topic, newPercent)
+    const checkedIndices = progress?.active_aptitude_checked?.[topic] || []
+    const isCurrentlyChecked = checkedIndices.includes(index)
+    let newCheckedIndices;
+    if (isCurrentlyChecked) {
+      newCheckedIndices = checkedIndices.filter(i => i !== index)
+    } else {
+      newCheckedIndices = [...checkedIndices, index]
+    }
+    
+    // We update UI optimistically
+    if (progress) {
+      setProgress({
+        ...progress,
+        active_aptitude_checked: {
+          ...(progress.active_aptitude_checked || {}),
+          [topic]: newCheckedIndices
+        }
+      })
+    }
+    
+    try {
+      const res = await api.post('/api/coding/aptitude', { topic, completion_percentage: 0, checked_indices: newCheckedIndices })
+      if (res.data.progress) {
+        setProgress(res.data.progress)
+      }
+      const readRes = await api.get('/api/placement/readiness')
+      setReadiness(readRes.data)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleRegenerateAptitudeQuestions = async (topic: string) => {
@@ -857,51 +909,6 @@ export const Prep: React.FC = () => {
     }
   }
 
-  // Slider change for Core subjects
-  const handleCoreSliderChange = async (subject: string, percentage: number) => {
-    try {
-      if (progress) {
-        setProgress({
-          ...progress,
-          active_core_subjects_progress: {
-            ...(progress.active_core_subjects_progress || {}),
-            [subject]: percentage
-          }
-        })
-      }
-      const res = await api.post('/api/coding/core-subjects', { subject, completion_percentage: percentage })
-      if (res.data.progress) {
-        setProgress(res.data.progress)
-      }
-      const readRes = await api.get('/api/placement/readiness')
-      setReadiness(readRes.data)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  // Slider change for Aptitude subjects
-  const handleAptitudeSliderChange = async (topic: string, percentage: number) => {
-    try {
-      if (progress) {
-        setProgress({
-          ...progress,
-          active_aptitude_progress: {
-            ...(progress.active_aptitude_progress || {}),
-            [topic]: percentage
-          }
-        })
-      }
-      const res = await api.post('/api/coding/aptitude', { topic, completion_percentage: percentage })
-      if (res.data.progress) {
-        setProgress(res.data.progress)
-      }
-      const readRes = await api.get('/api/placement/readiness')
-      setReadiness(readRes.data)
-    } catch (e) {
-      console.error(e)
-    }
-  }
 
   // Add Project
   const handleAddProject = async (e: React.FormEvent) => {
