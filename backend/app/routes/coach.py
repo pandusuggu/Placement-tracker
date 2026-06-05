@@ -317,3 +317,19 @@ async def clear_ai_chat_history(chat_type: str = "coach", user: User = Depends(g
         AICoachMessage.chat_type == chat_type
     ).delete()
     return {"message": f"Successfully cleared chat history for {chat_type}."}
+
+@router.get("/chat/limit-stats")
+async def get_limit_stats(user: User = Depends(get_current_user)):
+    from app.models.ai_log import AIRequestLog
+    from datetime import datetime, timedelta
+    one_day_ago = datetime.utcnow() - timedelta(days=1)
+    daily_count = await AIRequestLog.find(
+        AIRequestLog.user_id == user.id,
+        AIRequestLog.created_at >= one_day_ago
+    ).count()
+    remaining_today = max(0, 100 - daily_count)
+    return {
+        "remaining_today": remaining_today,
+        "daily_count": daily_count,
+        "daily_limit": 100
+    }

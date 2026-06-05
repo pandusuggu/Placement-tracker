@@ -20,6 +20,11 @@ export const AICoach: React.FC = () => {
   const [recalculating, setRecalculating] = useState(false)
   const [acknowledgedTips, setAcknowledgedTips] = useState<Record<string, boolean>>({})
 
+  // Limit and cooldown states
+  const [remainingToday, setRemainingToday] = useState(100)
+  const [cooldownActive, setCooldownActive] = useState(false)
+  const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0)
+
   // Chatbot states
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
     { role: 'assistant', content: "Hi! I am your AI Productivity Coach. Ask me any questions about your schedule, roadmap, tasks, or time management tips!" }
@@ -36,14 +41,30 @@ export const AICoach: React.FC = () => {
     scrollToBottom()
   }, [messages])
 
+  const startCooldown = () => {
+    setCooldownActive(true)
+    setCooldownTimeLeft(30)
+    const interval = setInterval(() => {
+      setCooldownTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setCooldownActive(false)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!chatInput.trim() || sending) return
+    if (!chatInput.trim() || sending || cooldownActive) return
 
     const userMessage = chatInput.trim()
     setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setChatInput('')
     setSending(true)
+    startCooldown()
 
     try {
       const res = await api.post('/api/coach/chat', {
@@ -52,6 +73,7 @@ export const AICoach: React.FC = () => {
       })
 
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }])
+      fetchLimitStats()
     } catch (err: any) {
       console.error(err)
       const detail = err.response?.data?.detail || "Sorry, I had trouble processing that request."
@@ -87,10 +109,11 @@ export const AICoach: React.FC = () => {
 
   const discussWithCoach = async (topic: string, text: string) => {
     const promptMessage = `Hi Coach! I'd like to discuss my AI Coach insights regarding ${topic}: "${text}". Can you explain this behavior and suggest some concrete steps I should take next?`
-    if (sending) return
+    if (sending || cooldownActive) return
 
     setMessages(prev => [...prev, { role: 'user', content: promptMessage }])
     setSending(true)
+    startCooldown()
 
     try {
       const res = await api.post('/api/coach/chat', {
@@ -99,6 +122,7 @@ export const AICoach: React.FC = () => {
       })
 
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }])
+      fetchLimitStats()
     } catch (err: any) {
       console.error(err)
       const detail = err.response?.data?.detail || "Sorry, I had trouble processing that request."
@@ -115,6 +139,15 @@ export const AICoach: React.FC = () => {
     }))
   }
 
+  const fetchLimitStats = async () => {
+    try {
+      const res = await api.get('/api/coach/chat/limit-stats')
+      setRemainingToday(res.data.remaining_today)
+    } catch (e) {
+      console.error("Failed to fetch limit stats:", e)
+    }
+  }
+
   const fetchChatHistory = async () => {
     try {
       const res = await api.get('/api/coach/chat/history?chat_type=coach')
@@ -129,6 +162,7 @@ export const AICoach: React.FC = () => {
   useEffect(() => {
     fetchCoachData()
     fetchChatHistory()
+    fetchLimitStats()
   }, [])
 
   if (loading) {
@@ -256,7 +290,8 @@ export const AICoach: React.FC = () => {
                       <h4 className="text-slate-700 dark:text-slate-350">Diagnostic Analysis Summary:</h4>
                       <button 
                         onClick={() => discussWithCoach('Diagnostic Analysis Summary', coach.insights)}
-                        className="flex items-center gap-1 text-[10px] text-primary hover:text-primary-dark dark:hover:text-primary-light font-bold transition-colors bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/10"
+                        disabled={sending || cooldownActive}
+                        className="flex items-center gap-1 text-[10px] text-primary hover:text-primary-dark dark:hover:text-primary-light font-bold transition-colors bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/10 disabled:opacity-50 disabled:pointer-events-none"
                         title="Discuss this insight with AI Coach"
                       >
                         <MessageSquare size={10} />
@@ -273,7 +308,8 @@ export const AICoach: React.FC = () => {
                       <h4 className="text-slate-700 dark:text-slate-350">Tomorrow's Time Optimization:</h4>
                       <button 
                         onClick={() => discussWithCoach('Time Optimization Recommendation', coach.optimization_suggestion)}
-                        className="flex items-center gap-1 text-[10px] text-primary hover:text-primary-dark dark:hover:text-primary-light font-bold transition-colors bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/10"
+                        disabled={sending || cooldownActive}
+                        className="flex items-center gap-1 text-[10px] text-primary hover:text-primary-dark dark:hover:text-primary-light font-bold transition-colors bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/10 disabled:opacity-50 disabled:pointer-events-none"
                         title="Discuss this optimization with AI Coach"
                       >
                         <MessageSquare size={10} />
@@ -370,7 +406,8 @@ export const AICoach: React.FC = () => {
                     <h4 className="text-slate-700 dark:text-slate-350">AI Burnout Recovery Plan:</h4>
                     <button 
                       onClick={() => discussWithCoach('Burnout Recovery Plan', coach.burnout.recovery_plan)}
-                      className="flex items-center gap-1 text-[10px] text-primary hover:text-primary-dark dark:hover:text-primary-light font-bold transition-colors bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/10"
+                      disabled={sending || cooldownActive}
+                      className="flex items-center gap-1 text-[10px] text-primary hover:text-primary-dark dark:hover:text-primary-light font-bold transition-colors bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/10 disabled:opacity-50 disabled:pointer-events-none"
                       title="Discuss burnout plan with AI Coach"
                     >
                       <MessageSquare size={10} />
@@ -435,7 +472,8 @@ export const AICoach: React.FC = () => {
                                 e.stopPropagation();
                                 discussWithCoach('Schedule Recommendation', tip);
                               }}
-                              className="p-1 hover:bg-primary/10 rounded text-slate-400 hover:text-primary transition-all"
+                              disabled={sending || cooldownActive}
+                              className="p-1 hover:bg-primary/10 rounded text-slate-400 hover:text-primary transition-all disabled:opacity-50 disabled:pointer-events-none"
                               title="Discuss with Coach"
                             >
                               <MessageSquare size={12} />
@@ -493,7 +531,7 @@ export const AICoach: React.FC = () => {
             {/* AI Guidelines Rate Limit Banner */}
             <div className="bg-primary/5 border-b border-border-light dark:border-border-dark px-4 py-2 flex items-center gap-2 text-[10px] text-slate-600 dark:text-slate-400 font-semibold bg-gradient-to-r from-primary/5 via-violet-500/5 to-transparent shrink-0">
               <Sparkles size={12} className="text-primary animate-pulse shrink-0" />
-              <span>AI Guidelines: 2 requests/min • 100 requests/day • Concise answers to save tokens.</span>
+              <span>AI Guidelines: 2 requests/min • 100 requests/day • Concise answers to save tokens. <span className="text-primary dark:text-primary-light">(Remaining today: {remainingToday}/100)</span></span>
             </div>
 
             {/* Chat Messages scroll area */}
@@ -530,18 +568,18 @@ export const AICoach: React.FC = () => {
             <form onSubmit={handleSendMessage} className="p-3 border-t border-border-light dark:border-border-dark flex gap-2 bg-slate-50/50 dark:bg-slate-900/50">
               <input
                 type="text"
-                placeholder="Ask me something about your schedule..."
+                placeholder={cooldownActive ? `Cooldown active. Please wait ${cooldownTimeLeft}s...` : "Ask me something about your schedule..."}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 className="flex-1 glass-input py-2 text-xs focus:ring-1 focus:ring-primary focus:outline-none"
-                disabled={sending}
+                disabled={sending || cooldownActive}
               />
               <button
                 type="submit"
-                disabled={sending || !chatInput.trim()}
-                className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50"
+                disabled={sending || cooldownActive || !chatInput.trim()}
+                className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50 min-w-[70px] text-center"
               >
-                Send
+                {cooldownActive ? `${cooldownTimeLeft}s` : 'Send'}
               </button>
             </form>
           </div>

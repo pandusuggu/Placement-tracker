@@ -297,6 +297,35 @@ export const Prep: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
 
+  // Limit and cooldown states
+  const [remainingToday, setRemainingToday] = useState(100)
+  const [cooldownActive, setCooldownActive] = useState(false)
+  const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0)
+
+  const startCooldown = () => {
+    setCooldownActive(true)
+    setCooldownTimeLeft(30)
+    const interval = setInterval(() => {
+      setCooldownTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setCooldownActive(false)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  const fetchLimitStats = async () => {
+    try {
+      const res = await api.get('/api/coach/chat/limit-stats')
+      setRemainingToday(res.data.remaining_today)
+    } catch (e) {
+      console.error("Failed to fetch limit stats:", e)
+    }
+  }
+
   // Username states
   const [leetcode, setLeetcode] = useState('')
   const [showSyncPanel, setShowSyncPanel] = useState(false)
@@ -334,7 +363,9 @@ export const Prep: React.FC = () => {
   const [generatingSubject, setGeneratingSubject] = useState<string | null>(null)
 
   const handleRegenerateCSQuestions = async (subject: string) => {
+    if (cooldownActive) return
     setGeneratingSubject(subject)
+    startCooldown()
     try {
       const res = await api.post('/api/coding/core-subjects/regenerate', { subject })
       if (progress) {
@@ -353,6 +384,7 @@ export const Prep: React.FC = () => {
       // Refresh readiness
       const readRes = await api.get('/api/placement/readiness')
       setReadiness(readRes.data)
+      fetchLimitStats()
     } catch (e: any) {
       console.error("Failed to regenerate CS questions:", e)
       alert(e.response?.data?.detail || "AI Generation failed. Check API key configuration or try again.")
@@ -373,7 +405,9 @@ export const Prep: React.FC = () => {
   }
 
   const handleRegenerateAptitudeQuestions = async (topic: string) => {
+    if (cooldownActive) return
     setGeneratingAptitudeTopic(topic)
+    startCooldown()
     try {
       const res = await api.post('/api/coding/aptitude/regenerate', { topic })
       if (progress) {
@@ -392,6 +426,7 @@ export const Prep: React.FC = () => {
       // Refresh readiness
       const readRes = await api.get('/api/placement/readiness')
       setReadiness(readRes.data)
+      fetchLimitStats()
     } catch (err: any) {
       console.error("Failed to regenerate Aptitude questions:", err)
       alert(err.response?.data?.detail || "AI Generation failed. Check API key configuration or try again.")
@@ -427,6 +462,7 @@ export const Prep: React.FC = () => {
         }
       })
       setReadiness(res.data)
+      fetchLimitStats()
       
       if (progress) {
         setProgress({
@@ -524,7 +560,9 @@ export const Prep: React.FC = () => {
   }
 
   const handleShuffleRoundQuestions = async (company: string, roundId: string, roundName: string, roundDesc: string) => {
+    if (cooldownActive) return
     setShufflingRounds(prev => ({ ...prev, [roundId]: true }))
+    startCooldown()
     try {
       const res = await api.post('/api/placement/company-rounds/regenerate', {
         company,
@@ -559,7 +597,7 @@ export const Prep: React.FC = () => {
       const completedCount = allRounds.filter(id => nextRounds[id]).length
       const computedScore = Math.round((completedCount / allRounds.length) * 100)
       await handleCareerUpdate('mock_interview_score', computedScore)
-
+      fetchLimitStats()
     } catch (err: any) {
       console.error(err)
       alert(err.response?.data?.detail || "Failed to shuffle questions with AI. Please check server connections and API key.")
@@ -586,12 +624,13 @@ export const Prep: React.FC = () => {
   const handleSendPrepChatMessage = async (e?: React.FormEvent, customMsg?: string) => {
     if (e) e.preventDefault()
     const msgToSend = customMsg || prepChatInput.trim()
-    if (!msgToSend || prepChatSending) return
+    if (!msgToSend || prepChatSending || cooldownActive) return
 
     setPrepChatMessages(prev => [...prev, { role: 'user', content: msgToSend }])
     if (!customMsg) setPrepChatInput('')
     setPrepChatSending(true)
     setIsChatOpen(true)
+    startCooldown()
 
     try {
       const res = await api.post('/api/coach/chat', {
@@ -600,6 +639,7 @@ export const Prep: React.FC = () => {
       })
 
       setPrepChatMessages(prev => [...prev, { role: 'assistant', content: res.data.response }])
+      fetchLimitStats()
     } catch (err: any) {
       console.error(err)
       const detail = err.response?.data?.detail || "Sorry, I had trouble processing your question. Please try again."
@@ -683,6 +723,7 @@ export const Prep: React.FC = () => {
   useEffect(() => {
     fetchProgress()
     fetchPrepChatHistory()
+    fetchLimitStats()
   }, [])
 
   // Sync profile handles
@@ -1425,9 +1466,10 @@ export const Prep: React.FC = () => {
                                             {q.difficulty}
                                           </span>
                                           <button
+                                            disabled={cooldownActive || prepChatSending}
                                             onClick={() => askAIAboutQuestion(q.title, `${topic} coding problem`)}
-                                            className="p-1 hover:bg-slate-250 dark:hover:bg-slate-800 rounded text-primary hover:text-primary-dark transition-all flex items-center justify-center"
-                                            title="Ask AI to explain this problem"
+                                            className="p-1 hover:bg-slate-250 dark:hover:bg-slate-800 rounded text-primary hover:text-primary-dark transition-all flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                                            title={cooldownActive ? `Cooldown active. Please wait ${cooldownTimeLeft}s...` : "Ask AI to explain this problem"}
                                           >
                                             <Brain size={12} />
                                           </button>
@@ -1628,9 +1670,10 @@ export const Prep: React.FC = () => {
                                             {q.difficulty}
                                           </span>
                                           <button
+                                            disabled={cooldownActive || prepChatSending}
                                             onClick={() => askAIAboutQuestion(q.title, `${topic} coding problem`)}
-                                            className="p-1 hover:bg-slate-250 dark:hover:bg-slate-800 rounded text-primary hover:text-primary-dark transition-all flex items-center justify-center"
-                                            title="Ask AI to explain this problem"
+                                            className="p-1 hover:bg-slate-250 dark:hover:bg-slate-800 rounded text-primary hover:text-primary-dark transition-all flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                                            title={cooldownActive ? `Cooldown active. Please wait ${cooldownTimeLeft}s...` : "Ask AI to explain this problem"}
                                           >
                                             <Brain size={12} />
                                           </button>
@@ -1787,15 +1830,16 @@ export const Prep: React.FC = () => {
                                   </span>
                                 </div>
                                 <button
+                                  disabled={cooldownActive || prepChatSending}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     askAIAboutQuestion(q, `${sub} Subject`)
                                   }}
-                                  className="text-[10px] font-bold text-primary dark:text-primary-light hover:bg-primary/10 px-2 py-1 rounded transition-all flex items-center gap-1 border border-primary/20 flex-shrink-0"
-                                  title="Ask AI to explain this question"
+                                  className="text-[10px] font-bold text-primary dark:text-primary-light hover:bg-primary/10 px-2 py-1 rounded transition-all flex items-center gap-1 border border-primary/20 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  title={cooldownActive ? `Cooldown active (${cooldownTimeLeft}s)` : "Ask AI to explain this question"}
                                 >
                                   <Brain size={10} />
-                                  <span>Ask AI</span>
+                                  <span>{cooldownActive ? `${cooldownTimeLeft}s` : "Ask AI"}</span>
                                 </button>
                               </div>
                             )
@@ -1809,12 +1853,12 @@ export const Prep: React.FC = () => {
                             Dynamic AI-powered questions
                           </span>
                           <button
-                            disabled={generatingSubject !== null}
+                            disabled={generatingSubject !== null || cooldownActive}
                             onClick={() => handleRegenerateCSQuestions(sub)}
-                            className="bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light font-extrabold px-3 py-1.5 rounded-lg text-[9px] flex items-center gap-1 transition-all"
+                            className="bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light font-extrabold px-3 py-1.5 rounded-lg text-[9px] flex items-center gap-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <RefreshCw size={10} className={generatingSubject === sub ? "animate-spin" : ""} />
-                            {generatingSubject === sub ? "Generating..." : "Regenerate with AI"}
+                            {generatingSubject === sub ? "Generating..." : cooldownActive ? `Wait ${cooldownTimeLeft}s` : "Regenerate with AI"}
                           </button>
                         </div>
                       </div>
@@ -1926,15 +1970,16 @@ export const Prep: React.FC = () => {
                                     </a>
                                   )}
                                   <button
+                                    disabled={cooldownActive || prepChatSending}
                                     onClick={(e) => {
                                       e.stopPropagation()
                                       askAIAboutQuestion(displayText, `${topic} Topic`)
                                     }}
-                                    className="text-[10px] font-bold text-primary dark:text-primary-light hover:bg-primary/10 px-2 py-1 rounded transition-all flex items-center gap-1 border border-primary/20 flex-shrink-0"
-                                    title="Ask AI to explain this question"
+                                    className="text-[10px] font-bold text-primary dark:text-primary-light hover:bg-primary/10 px-2 py-1 rounded transition-all flex items-center gap-1 border border-primary/20 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    title={cooldownActive ? `Cooldown active (${cooldownTimeLeft}s)` : "Ask AI to explain this question"}
                                   >
                                     <Brain size={10} />
-                                    <span>Ask AI</span>
+                                    <span>{cooldownActive ? `${cooldownTimeLeft}s` : "Ask AI"}</span>
                                   </button>
                                 </div>
                               </div>
@@ -1949,12 +1994,12 @@ export const Prep: React.FC = () => {
                             Dynamic AI-powered questions
                           </span>
                           <button
-                            disabled={generatingAptitudeTopic !== null}
+                            disabled={generatingAptitudeTopic !== null || cooldownActive}
                             onClick={() => handleRegenerateAptitudeQuestions(topic)}
-                            className="bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light font-extrabold px-3 py-1.5 rounded-lg text-[9px] flex items-center gap-1 transition-all"
+                            className="bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-light font-extrabold px-3 py-1.5 rounded-lg text-[9px] flex items-center gap-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <RefreshCw size={10} className={generatingAptitudeTopic === topic ? "animate-spin" : ""} />
-                            {generatingAptitudeTopic === topic ? "Generating..." : "Regenerate with AI"}
+                            {generatingAptitudeTopic === topic ? "Generating..." : cooldownActive ? `Wait ${cooldownTimeLeft}s` : "Regenerate with AI"}
                           </button>
                         </div>
                       </div>
@@ -2349,12 +2394,16 @@ export const Prep: React.FC = () => {
                       {/* AI Shuffle button */}
                       <button
                         type="button"
-                        disabled={shufflingRounds[round.id]}
+                        disabled={shufflingRounds[round.id] || cooldownActive}
                         onClick={() => handleShuffleRoundQuestions(activeCompany, round.id, round.name, round.desc)}
-                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-primary transition-all flex items-center justify-center shrink-0"
-                        title="Shuffle questions with AI"
+                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-primary transition-all flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={cooldownActive ? `Cooldown active (${cooldownTimeLeft}s)` : "Shuffle questions with AI"}
                       >
-                        <RefreshCw size={12} className={shufflingRounds[round.id] ? "animate-spin text-primary" : ""} />
+                        {cooldownActive ? (
+                          <span className="text-[10px] text-slate-400 font-bold">{cooldownTimeLeft}s</span>
+                        ) : (
+                          <RefreshCw size={12} className={shufflingRounds[round.id] ? "animate-spin text-primary" : ""} />
+                        )}
                       </button>
                     </div>
 
@@ -2423,14 +2472,15 @@ export const Prep: React.FC = () => {
                                     )}
                                     <button
                                       type="button"
+                                      disabled={cooldownActive || prepChatSending}
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         askAIAboutQuestion(displayText, `${round.name} round for ${COMPANY_PREP_DATA[activeCompany].name}`)
                                       }}
-                                      className="text-[9px] font-extrabold text-primary hover:underline flex items-center gap-0.5"
-                                      title="Ask AI to explain this question"
+                                      className="text-[9px] font-extrabold text-primary hover:underline flex items-center gap-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                                      title={cooldownActive ? `Cooldown active (${cooldownTimeLeft}s)` : "Ask AI to explain this question"}
                                     >
-                                      <span>Ask AI</span>
+                                      <span>{cooldownActive ? `${cooldownTimeLeft}s` : "Ask AI"}</span>
                                       <Brain size={8} />
                                     </button>
                                   </div>
@@ -2711,7 +2761,7 @@ export const Prep: React.FC = () => {
             {/* AI Guidelines Rate Limit Banner */}
             <div className="bg-primary/5 border-b border-slate-200/60 dark:border-slate-800/60 px-4 py-2 flex items-center gap-1.5 text-[9px] text-slate-550 dark:text-slate-400 font-semibold bg-gradient-to-r from-primary/5 via-violet-500/5 to-transparent shrink-0">
               <Sparkles size={11} className="text-primary animate-pulse shrink-0" />
-              <span>AI Guidelines: 2 requests/min • 100 requests/day • Concise answers.</span>
+              <span>AI Guidelines: 2 requests/min • 100 requests/day • Concise answers. <span className="text-primary dark:text-primary-light">(Remaining today: {remainingToday}/100)</span></span>
             </div>
 
             {/* Messages body */}
@@ -2743,19 +2793,21 @@ export const Prep: React.FC = () => {
               <input
                 required
                 type="text"
-                placeholder="Ask about DBMS, OS, CN, OOP or DSA questions..."
+                placeholder={cooldownActive ? `Cooldown active. Please wait ${cooldownTimeLeft}s...` : "Ask about DBMS, OS, CN, OOP or DSA questions..."}
                 value={prepChatInput}
                 onChange={(e) => setPrepChatInput(e.target.value)}
-                disabled={prepChatSending}
+                disabled={prepChatSending || cooldownActive}
                 className="flex-1 glass-input py-2 text-xs rounded-xl outline-none"
               />
               <button
                 type="submit"
-                disabled={prepChatSending || !prepChatInput.trim()}
-                className="p-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:hover:bg-primary shadow-sm shadow-primary/25"
+                disabled={prepChatSending || cooldownActive || !prepChatInput.trim()}
+                className="p-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:hover:bg-primary shadow-sm shadow-primary/25 min-w-[36px]"
               >
                 {prepChatSending ? (
                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : cooldownActive ? (
+                  <span className="text-[10px] font-bold">{cooldownTimeLeft}s</span>
                 ) : (
                   <Send size={12} />
                 )}
