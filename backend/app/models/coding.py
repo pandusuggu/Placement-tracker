@@ -57,6 +57,14 @@ class CodingProgress(Document):
     # Aptitude Prep: {"Quantitative Aptitude": 0.0, "Logical Reasoning": 0.0, "Verbal Ability": 0.0}
     aptitude_progress: Dict[str, float] = Field(default_factory=dict)
     
+    # Cumulative and Active Question progress tracking
+    core_subjects_total_solved: Dict[str, int] = Field(default_factory=dict)
+    core_subjects_total_generated: Dict[str, int] = Field(default_factory=dict)
+    aptitude_total_solved: Dict[str, int] = Field(default_factory=dict)
+    aptitude_total_generated: Dict[str, int] = Field(default_factory=dict)
+    active_core_subjects_progress: Dict[str, float] = Field(default_factory=dict)
+    active_aptitude_progress: Dict[str, float] = Field(default_factory=dict)
+    
     # Project progress: list of dicts: [{"name": "E-Commerce", "completion_percentage": 75}]
     projects_progress: List[dict] = Field(default_factory=list)
     

@@ -41,6 +41,12 @@ interface ProgressData {
   aptitude_progress: Record<string, number>
   aptitude_questions: Record<string, string[]>
   projects_progress: Project[]
+  core_subjects_total_solved?: Record<string, number>
+  core_subjects_total_generated?: Record<string, number>
+  aptitude_total_solved?: Record<string, number>
+  aptitude_total_generated?: Record<string, number>
+  active_core_subjects_progress?: Record<string, number>
+  active_aptitude_progress?: Record<string, number>
   resume_status: string
   mock_interview_score: number
 }
@@ -349,7 +355,9 @@ export const Prep: React.FC = () => {
 
   // Helper: check if a theoretical question is checked
   const isCSQuestionChecked = (subject: string, index: number) => {
-    const progressPercent = progress?.core_subjects_progress?.[subject] || 0
+    const progressPercent = progress?.active_core_subjects_progress?.[subject] !== undefined
+      ? (progress.active_core_subjects_progress[subject] || 0)
+      : (progress?.core_subjects_progress?.[subject] || 0)
     return (index * 20) < progressPercent
   }
 
@@ -368,18 +376,8 @@ export const Prep: React.FC = () => {
     startCooldown()
     try {
       const res = await api.post('/api/coding/core-subjects/regenerate', { subject })
-      if (progress) {
-        setProgress({
-          ...progress,
-          core_subjects_questions: {
-            ...progress.core_subjects_questions,
-            [subject]: res.data.questions
-          },
-          core_subjects_progress: {
-            ...progress.core_subjects_progress,
-            [subject]: 0.0
-          }
-        })
+      if (res.data.progress_doc) {
+        setProgress(res.data.progress_doc)
       }
       // Refresh readiness
       const readRes = await api.get('/api/placement/readiness')
@@ -394,7 +392,9 @@ export const Prep: React.FC = () => {
   }
 
   const isAptitudeQuestionChecked = (topic: string, index: number) => {
-    const progressPercent = progress?.aptitude_progress?.[topic] || 0
+    const progressPercent = progress?.active_aptitude_progress?.[topic] !== undefined
+      ? (progress.active_aptitude_progress[topic] || 0)
+      : (progress?.aptitude_progress?.[topic] || 0)
     return (index * 20) < progressPercent
   }
 
@@ -410,18 +410,8 @@ export const Prep: React.FC = () => {
     startCooldown()
     try {
       const res = await api.post('/api/coding/aptitude/regenerate', { topic })
-      if (progress) {
-        setProgress({
-          ...progress,
-          aptitude_questions: {
-            ...progress.aptitude_questions,
-            [topic]: res.data.questions
-          },
-          aptitude_progress: {
-            ...progress.aptitude_progress,
-            [topic]: 0.0
-          }
-        })
+      if (res.data.progress_doc) {
+        setProgress(res.data.progress_doc)
       }
       // Refresh readiness
       const readRes = await api.get('/api/placement/readiness')
@@ -873,11 +863,16 @@ export const Prep: React.FC = () => {
       if (progress) {
         setProgress({
           ...progress,
-          core_subjects_progress: { ...progress.core_subjects_progress, [subject]: percentage }
+          active_core_subjects_progress: {
+            ...(progress.active_core_subjects_progress || {}),
+            [subject]: percentage
+          }
         })
       }
-      await api.post('/api/coding/core-subjects', { subject, completion_percentage: percentage })
-      
+      const res = await api.post('/api/coding/core-subjects', { subject, completion_percentage: percentage })
+      if (res.data.progress) {
+        setProgress(res.data.progress)
+      }
       const readRes = await api.get('/api/placement/readiness')
       setReadiness(readRes.data)
     } catch (e) {
@@ -891,11 +886,16 @@ export const Prep: React.FC = () => {
       if (progress) {
         setProgress({
           ...progress,
-          aptitude_progress: { ...progress.aptitude_progress, [topic]: percentage }
+          active_aptitude_progress: {
+            ...(progress.active_aptitude_progress || {}),
+            [topic]: percentage
+          }
         })
       }
-      await api.post('/api/coding/aptitude', { topic, completion_percentage: percentage })
-      
+      const res = await api.post('/api/coding/aptitude', { topic, completion_percentage: percentage })
+      if (res.data.progress) {
+        setProgress(res.data.progress)
+      }
       const readRes = await api.get('/api/placement/readiness')
       setReadiness(readRes.data)
     } catch (e) {

@@ -30,6 +30,12 @@ interface CodingProgressData {
     description?: string
     completion_percentage: number
   }>
+  core_subjects_total_solved?: Record<string, number>
+  core_subjects_total_generated?: Record<string, number>
+  aptitude_total_solved?: Record<string, number>
+  aptitude_total_generated?: Record<string, number>
+  active_core_subjects_progress?: Record<string, number>
+  active_aptitude_progress?: Record<string, number>
 }
 
 interface PlacementReadiness {
@@ -44,6 +50,7 @@ interface PlacementReadiness {
 interface ProfileProps {
   viewingUserId?: string | null
   setViewingUserId?: (userId: string | null) => void
+  setCurrentTab?: (tab: string) => void
 }
 
 const AVATAR_GRADIENTS = [
@@ -55,7 +62,7 @@ const AVATAR_GRADIENTS = [
   'from-slate-700 to-slate-900 shadow-slate',
 ]
 
-export const Profile: React.FC<ProfileProps> = ({ viewingUserId, setViewingUserId }) => {
+export const Profile: React.FC<ProfileProps> = ({ viewingUserId, setViewingUserId, setCurrentTab }) => {
   const { user, updateProfile } = useAuthStore()
   const currentUserId = user?.id
   const isReadOnly = !!viewingUserId && viewingUserId !== currentUserId
@@ -286,7 +293,10 @@ export const Profile: React.FC<ProfileProps> = ({ viewingUserId, setViewingUserI
       {isReadOnly && (
         <div className="flex justify-between items-center bg-slate-500/5 p-3 rounded-2xl border border-slate-200/30 dark:border-slate-800/40">
           <button
-            onClick={() => setViewingUserId?.(null)}
+            onClick={() => {
+              setViewingUserId?.(null);
+              setCurrentTab?.('leaderboard');
+            }}
             className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-350 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 font-bold px-4 py-2 rounded-xl text-xs transition-all active:scale-95"
           >
             ← Back to Leaderboard

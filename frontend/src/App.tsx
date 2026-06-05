@@ -82,7 +82,7 @@ export const App: React.FC = () => {
       case 'reflections':
         return <Reflections />
       case 'profile':
-        return <Profile viewingUserId={viewingUserId} setViewingUserId={setViewingUserId} />
+        return <Profile viewingUserId={viewingUserId} setViewingUserId={setViewingUserId} setCurrentTab={handleSetTab} />
       default:
         return <Dashboard />
     }

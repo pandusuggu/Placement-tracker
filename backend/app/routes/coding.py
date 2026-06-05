@@ -121,6 +121,7 @@ def get_progress_response(progress: CodingProgress) -> dict:
 @router.get("/progress")
 async def get_progress(user: User = Depends(get_current_user)):
     progress = await CodingProgress.find_one(CodingProgress.user_id == user.id)
+    need_save = False
     if not progress:
         # Lazy create if not found
         progress = CodingProgress(
@@ -137,8 +138,8 @@ async def get_progress(user: User = Depends(get_current_user)):
             projects_progress=[]
         )
         await progress.create()
+        need_save = True
     else:
-        need_save = False
         # Self-healing check: clear any fake sync spikes (> 15 solves in a single day)
         if progress.daily_solved_count:
             cleaned_counts = {}
@@ -201,9 +202,42 @@ async def get_progress(user: User = Depends(get_current_user)):
                 progress.daily_solved_count = {}
             progress.daily_solved_count[today_str] = progress.daily_solved_count.get(today_str, 0) + diff
             need_save = True
+
+    # Initialize cumulative and active fields
+    if progress.core_subjects_total_generated is None:
+        progress.core_subjects_total_generated = {}
+    if progress.core_subjects_total_solved is None:
+        progress.core_subjects_total_solved = {}
+    if progress.active_core_subjects_progress is None:
+        progress.active_core_subjects_progress = {}
+
+    if progress.aptitude_total_generated is None:
+        progress.aptitude_total_generated = {}
+    if progress.aptitude_total_solved is None:
+        progress.aptitude_total_solved = {}
+    if progress.active_aptitude_progress is None:
+        progress.active_aptitude_progress = {}
+
+    # Populate core subjects values if not present
+    for subject in ["DBMS", "OS", "CN", "OOP"]:
+        if subject not in progress.core_subjects_total_generated:
+            progress.core_subjects_total_generated[subject] = 5
+            existing_pct = progress.core_subjects_progress.get(subject, 0.0)
+            progress.core_subjects_total_solved[subject] = round(existing_pct / 20.0)
+            progress.active_core_subjects_progress[subject] = existing_pct
+            need_save = True
+
+    # Populate aptitude values if not present
+    for topic in ["Quantitative Aptitude", "Logical Reasoning", "Verbal Ability"]:
+        if topic not in progress.aptitude_total_generated:
+            progress.aptitude_total_generated[topic] = 5
+            existing_pct = progress.aptitude_progress.get(topic, 0.0)
+            progress.aptitude_total_solved[topic] = round(existing_pct / 20.0)
+            progress.active_aptitude_progress[topic] = existing_pct
+            need_save = True
                     
-        if need_save:
-            await progress.save()
+    if need_save:
+        await progress.save()
         
     res = get_progress_response(progress)
     
@@ -296,11 +330,42 @@ async def update_core_subject(data: CoreSubjectUpdateSchema, user: User = Depend
     if not progress:
         raise HTTPException(status_code=404, detail="Progress record not found")
         
-    progress.core_subjects_progress[data.subject] = data.completion_percentage
-    await progress.save()
+    # Initialize if missing
+    if progress.core_subjects_total_generated is None:
+        progress.core_subjects_total_generated = {}
+    if progress.core_subjects_total_solved is None:
+        progress.core_subjects_total_solved = {}
+    if progress.active_core_subjects_progress is None:
+        progress.active_core_subjects_progress = {}
+
+    if data.subject not in progress.core_subjects_total_generated:
+        progress.core_subjects_total_generated[data.subject] = 5
+        existing_pct = progress.core_subjects_progress.get(data.subject, 0.0)
+        progress.core_subjects_total_solved[data.subject] = round(existing_pct / 20.0)
+        progress.active_core_subjects_progress[data.subject] = existing_pct
+
+    # Calculate delta in active solved count
+    new_active_solved = round(data.completion_percentage / 20.0)
+    old_active_solved = round(progress.active_core_subjects_progress.get(data.subject, 0.0) / 20.0)
+    delta = new_active_solved - old_active_solved
+
+    # Update active and total solved
+    total_gen = progress.core_subjects_total_generated[data.subject]
+    progress.active_core_subjects_progress[data.subject] = data.completion_percentage
+    progress.core_subjects_total_solved[data.subject] = max(0, min(total_gen, progress.core_subjects_total_solved.get(data.subject, 0) + delta))
+
+    # Recalculate overall progress
+    total_sol = progress.core_subjects_total_solved[data.subject]
+    progress.core_subjects_progress[data.subject] = round((total_sol / total_gen) * 100.0, 2)
     
+    await progress.save()
     await PlacementService.create_or_update_placement_score(user.id, progress)
-    return {"message": f"Core Subject '{data.subject}' updated to {data.completion_percentage}%"}
+    
+    res = get_progress_response(progress)
+    return {
+        "message": f"Core Subject '{data.subject}' updated to {data.completion_percentage}%",
+        "progress": res
+    }
 
 @router.post("/aptitude")
 async def update_aptitude(data: AptitudeUpdateSchema, user: User = Depends(get_current_user)):
@@ -308,11 +373,42 @@ async def update_aptitude(data: AptitudeUpdateSchema, user: User = Depends(get_c
     if not progress:
         raise HTTPException(status_code=404, detail="Progress record not found")
         
-    progress.aptitude_progress[data.topic] = data.completion_percentage
-    await progress.save()
+    # Initialize if missing
+    if progress.aptitude_total_generated is None:
+        progress.aptitude_total_generated = {}
+    if progress.aptitude_total_solved is None:
+        progress.aptitude_total_solved = {}
+    if progress.active_aptitude_progress is None:
+        progress.active_aptitude_progress = {}
+
+    if data.topic not in progress.aptitude_total_generated:
+        progress.aptitude_total_generated[data.topic] = 5
+        existing_pct = progress.aptitude_progress.get(data.topic, 0.0)
+        progress.aptitude_total_solved[data.topic] = round(existing_pct / 20.0)
+        progress.active_aptitude_progress[data.topic] = existing_pct
+
+    # Calculate delta in active solved count
+    new_active_solved = round(data.completion_percentage / 20.0)
+    old_active_solved = round(progress.active_aptitude_progress.get(data.topic, 0.0) / 20.0)
+    delta = new_active_solved - old_active_solved
+
+    # Update active and total solved
+    total_gen = progress.aptitude_total_generated[data.topic]
+    progress.active_aptitude_progress[data.topic] = data.completion_percentage
+    progress.aptitude_total_solved[data.topic] = max(0, min(total_gen, progress.aptitude_total_solved.get(data.topic, 0) + delta))
+
+    # Recalculate overall progress
+    total_sol = progress.aptitude_total_solved[data.topic]
+    progress.aptitude_progress[data.topic] = round((total_sol / total_gen) * 100.0, 2)
     
+    await progress.save()
     await PlacementService.create_or_update_placement_score(user.id, progress)
-    return {"message": f"Aptitude topic '{data.topic}' updated to {data.completion_percentage}%"}
+    
+    res = get_progress_response(progress)
+    return {
+        "message": f"Aptitude topic '{data.topic}' updated to {data.completion_percentage}%",
+        "progress": res
+    }
 
 @router.post("/project")
 async def add_or_update_project(data: ProjectUpdateSchema, user: User = Depends(get_current_user)):
@@ -386,16 +482,40 @@ async def regenerate_core_subjects_questions(data: RegenerateQuestionsSchema, us
     if progress.core_subjects_questions is None:
         progress.core_subjects_questions = {}
     progress.core_subjects_questions[data.subject] = new_qs
-    # Reset completion progress to 0% for this subject
-    progress.core_subjects_progress[data.subject] = 0.0
+
+    # Initialize if missing
+    if progress.core_subjects_total_generated is None:
+        progress.core_subjects_total_generated = {}
+    if progress.core_subjects_total_solved is None:
+        progress.core_subjects_total_solved = {}
+    if progress.active_core_subjects_progress is None:
+        progress.active_core_subjects_progress = {}
+
+    if data.subject not in progress.core_subjects_total_generated:
+        progress.core_subjects_total_generated[data.subject] = 5
+        existing_pct = progress.core_subjects_progress.get(data.subject, 0.0)
+        progress.core_subjects_total_solved[data.subject] = round(existing_pct / 20.0)
+        progress.active_core_subjects_progress[data.subject] = existing_pct
+
+    # Increment generated by 5
+    progress.core_subjects_total_generated[data.subject] = progress.core_subjects_total_generated.get(data.subject, 5) + 5
+    
+    # Reset active progress to 0% for the new batch
+    progress.active_core_subjects_progress[data.subject] = 0.0
+    
+    # Recalculate overall progress based on cumulative totals
+    total_sol = progress.core_subjects_total_solved.get(data.subject, 0)
+    total_gen = progress.core_subjects_total_generated[data.subject]
+    progress.core_subjects_progress[data.subject] = round((total_sol / total_gen) * 100.0, 2)
     
     await progress.save()
     await PlacementService.create_or_update_placement_score(user.id, progress)
     
+    res = get_progress_response(progress)
     return {
         "message": f"Successfully regenerated interview questions for {data.subject}",
         "questions": new_qs,
-        "progress": 0.0
+        "progress_doc": res
     }
 
 @router.post("/aptitude/regenerate")
@@ -417,16 +537,40 @@ async def regenerate_aptitude_questions(data: RegenerateAptitudeQuestionsSchema,
     if progress.aptitude_questions is None:
         progress.aptitude_questions = {}
     progress.aptitude_questions[data.topic] = new_qs
-    # Reset completion progress to 0% for this topic
-    progress.aptitude_progress[data.topic] = 0.0
+
+    # Initialize if missing
+    if progress.aptitude_total_generated is None:
+        progress.aptitude_total_generated = {}
+    if progress.aptitude_total_solved is None:
+        progress.aptitude_total_solved = {}
+    if progress.active_aptitude_progress is None:
+        progress.active_aptitude_progress = {}
+
+    if data.topic not in progress.aptitude_total_generated:
+        progress.aptitude_total_generated[data.topic] = 5
+        existing_pct = progress.aptitude_progress.get(data.topic, 0.0)
+        progress.aptitude_total_solved[data.topic] = round(existing_pct / 20.0)
+        progress.active_aptitude_progress[data.topic] = existing_pct
+
+    # Increment generated by 5
+    progress.aptitude_total_generated[data.topic] = progress.aptitude_total_generated.get(data.topic, 5) + 5
+    
+    # Reset active progress to 0% for the new batch
+    progress.active_aptitude_progress[data.topic] = 0.0
+    
+    # Recalculate overall progress based on cumulative totals
+    total_sol = progress.aptitude_total_solved.get(data.topic, 0)
+    total_gen = progress.aptitude_total_generated[data.topic]
+    progress.aptitude_progress[data.topic] = round((total_sol / total_gen) * 100.0, 2)
     
     await progress.save()
     await PlacementService.create_or_update_placement_score(user.id, progress)
     
+    res = get_progress_response(progress)
     return {
         "message": f"Successfully regenerated aptitude questions for {data.topic}",
         "questions": new_qs,
-        "progress": 0.0
+        "progress_doc": res
     }
 
 @router.post("/dsa/youtube")
