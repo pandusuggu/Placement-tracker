@@ -112,9 +112,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, sid
           }}
           className="w-full flex items-center text-left gap-3 p-2 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-850"
         >
-          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 select-none">
-            {user?.name?.charAt(0).toUpperCase() || 'U'}
-          </div>
+          {user?.avatar && (user.avatar.startsWith('http://') || user.avatar.startsWith('https://') || user.avatar.startsWith('data:image/')) ? (
+            <img 
+              src={user.avatar} 
+              alt={user?.name || 'User Avatar'} 
+              className="w-10 h-10 rounded-full object-cover border border-slate-300 dark:border-slate-700 shadow-sm select-none"
+            />
+          ) : (
+            <div className={`w-10 h-10 rounded-full ${user?.avatar ? `bg-gradient-to-br ${user.avatar} text-white` : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200'} border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold select-none`}>
+              {user?.name?.charAt(0).toUpperCase() || 'U'}
+            </div>
+          )}
           <div className="overflow-hidden flex-1">
             <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{user?.name}</h4>
             <p className="text-xs text-slate-500 dark:text-slate-500 truncate">{user?.email}</p>

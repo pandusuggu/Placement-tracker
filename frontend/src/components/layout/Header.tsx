@@ -178,14 +178,26 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, setCurrentTab, setSi
           {/* User Profile Trigger Button */}
           <button
             onClick={() => setCurrentTab('profile')}
-            className={`w-10 h-10 rounded-xl border flex items-center justify-center font-black text-xs select-none transition-all shadow-sm transform active:scale-95 ${
+            className={`w-10 h-10 rounded-xl border flex items-center justify-center font-black text-xs select-none transition-all shadow-sm transform active:scale-95 overflow-hidden ${
               currentTab === 'profile'
                 ? 'bg-primary text-white border-primary shadow-blue'
-                : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-800 dark:hover:text-slate-200'
+                : 'border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
             title="User Profile"
           >
-            {user?.name?.charAt(0).toUpperCase() || 'U'}
+            {user?.avatar && (user.avatar.startsWith('http://') || user.avatar.startsWith('https://') || user.avatar.startsWith('data:image/')) ? (
+              <img 
+                src={user.avatar} 
+                alt={user?.name || 'User Avatar'} 
+                className="w-full h-full object-cover select-none"
+              />
+            ) : user?.avatar ? (
+              <div className={`w-full h-full bg-gradient-to-br ${user.avatar} flex items-center justify-center text-white`}>
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            ) : (
+              user?.name?.charAt(0).toUpperCase() || 'U'
+            )}
           </button>
 
         </div>

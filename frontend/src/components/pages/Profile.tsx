@@ -311,9 +311,17 @@ export const Profile: React.FC<ProfileProps> = ({ viewingUserId, setViewingUserI
       <div className="glass-card p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start justify-between gap-6 relative overflow-hidden bg-gradient-to-r from-primary/5 via-violet-500/5 to-transparent">
         <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
           {/* Avatar frame */}
-          <div className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${userAvatar} flex items-center justify-center text-white text-4xl font-extrabold select-none shadow-lg transform hover:scale-[1.03] transition-all duration-300`}>
-            {avatarInitials}
-          </div>
+          {userAvatar && (userAvatar.startsWith('http://') || userAvatar.startsWith('https://') || userAvatar.startsWith('data:image/')) ? (
+            <img 
+              src={userAvatar} 
+              alt={displayedUser?.name || 'User Avatar'} 
+              className="w-24 h-24 rounded-3xl object-cover shadow-lg border border-slate-200/50 dark:border-slate-800/50 transform hover:scale-[1.03] transition-all duration-300 select-none"
+            />
+          ) : (
+            <div className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${userAvatar} flex items-center justify-center text-white text-4xl font-extrabold select-none shadow-lg transform hover:scale-[1.03] transition-all duration-300`}>
+              {avatarInitials}
+            </div>
+          )}
           <div>
             <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100">{displayedUser?.name}</h1>
             <p className="text-xs text-slate-500 font-semibold">{displayedUser?.email}</p>
@@ -534,15 +542,32 @@ export const Profile: React.FC<ProfileProps> = ({ viewingUserId, setViewingUserI
 
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 {/* Avatar chooser */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Choose Profile Theme Gradient</label>
-                  <div className="flex flex-wrap gap-2.5">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Profile Picture / Avatar Theme</label>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Visual Preview of Active custom avatar */}
+                    {avatar && (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:image/')) && (
+                      <div className="relative group w-10 h-10 rounded-2xl overflow-hidden shadow-md border-2 border-slate-800 dark:border-slate-100 shrink-0">
+                        <img 
+                          src={avatar} 
+                          alt="Custom Avatar Preview" 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <Check size={14} className="text-white drop-shadow-sm font-black" />
+                        </div>
+                      </div>
+                    )}
+
                     {AVATAR_GRADIENTS.map((grad) => (
                       <button
                         key={grad}
                         type="button"
                         onClick={() => setAvatar(grad)}
-                        className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center border-2 transition-all transform active:scale-95 ${
+                        className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center border-2 transition-all transform active:scale-95 shrink-0 ${
                           avatar === grad 
                             ? 'border-slate-800 dark:border-slate-100 scale-105 shadow-md' 
                             : 'border-transparent hover:scale-102 hover:border-slate-400/50'
@@ -551,6 +576,34 @@ export const Profile: React.FC<ProfileProps> = ({ viewingUserId, setViewingUserI
                         {avatar === grad && <Check size={14} className="text-white drop-shadow-sm font-black" />}
                       </button>
                     ))}
+
+                    {/* File Upload Action Button */}
+                    <label className="flex items-center justify-center gap-1.5 cursor-pointer text-xs font-bold text-primary hover:text-primary-dark transition-all border-2 border-dashed border-primary/30 hover:border-primary px-3 py-2 rounded-2xl bg-primary/5 active:scale-95 select-none h-10 shrink-0">
+                      <UploadCloud size={16} />
+                      <span>Upload Photo</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          
+                          if (file.size > 2 * 1024 * 1024) {
+                            alert("Please select an image smaller than 2MB.");
+                            return;
+                          }
+                          
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            if (event.target?.result) {
+                              setAvatar(event.target.result as string);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
                   </div>
                 </div>
 
