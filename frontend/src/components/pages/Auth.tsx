@@ -60,6 +60,29 @@ export const Auth: React.FC = () => {
     }
   }
 
+  // Real Google Sign-In Callback
+  const handleGoogleCredentialResponse = async (response: any) => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.post('/api/auth/google', {
+        token: response.credential,
+      });
+      
+      if (isAdminMode && res.data.user.role !== 'admin') {
+        setError('This portal is restricted to Placement Admins only.');
+        setLoading(false);
+        return;
+      }
+      
+      setAuth(res.data.access_token, res.data.user);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Google Sign-In failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Google Sign-In Simulator
   const handleGoogleLoginSimulate = async () => {
     setLoading(true)
@@ -89,6 +112,49 @@ export const Auth: React.FC = () => {
       setLoading(false)
     }
   }
+
+  // Initialize official Google Identity Services button
+  React.useEffect(() => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!googleClientId) {
+      return;
+    }
+
+    const initializeGoogleSignIn = () => {
+      const google = (window as any).google;
+      if (google && google.accounts && google.accounts.id) {
+        google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleCredentialResponse,
+        });
+        
+        const buttonDiv = document.getElementById("google-signin-button");
+        if (buttonDiv) {
+          google.accounts.id.renderButton(
+            buttonDiv,
+            {
+              theme: "outline",
+              size: "large",
+              text: "signin_with",
+              shape: "rectangular",
+              width: buttonDiv.clientWidth || 300,
+            }
+          );
+        }
+      }
+    };
+
+    // Retry checking for google object load
+    const interval = setInterval(() => {
+      const google = (window as any).google;
+      if (google && google.accounts && google.accounts.id) {
+        initializeGoogleSignIn();
+        clearInterval(interval);
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isAdminMode, isForgot, isLogin]);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background-light dark:bg-background-dark p-6 relative overflow-hidden font-sans">
@@ -284,19 +350,24 @@ export const Auth: React.FC = () => {
                 <div className="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800"></div>
               </div>
  
-              <button
-                onClick={handleGoogleLoginSimulate}
-                className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-350 hover:text-slate-900 dark:hover:text-slate-100 transition-all text-sm font-semibold shadow-sm"
-              >
-                {/* Standard Google vector logo */}
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.24 1 3.2 3.73 1.24 7.68l3.87 3a7 7 0 0 1 6.89-5.64z"/>
-                  <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.27H12v4.51h6.47a5.53 5.53 0 0 1-2.4 3.63v3.01h3.87c2.26-2.08 3.55-5.14 3.55-8.88z"/>
-                  <path fill="#FBBC05" d="M5.11 10.68a6.97 6.97 0 0 1 0-4.36L1.24 3.32a11.96 11.96 0 0 0 0 10.36l3.87-3z"/>
-                  <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.87-3c-1.1.74-2.5 1.18-4.09 1.18a7 7 0 0 1-6.89-5.64l-3.87 3A11.97 11.97 0 0 0 12 23z"/>
-                </svg>
-                <span>Google OAuth Login</span>
-              </button>
+              {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
+                <div id="google-signin-button" className="w-full flex justify-center mt-4 min-h-[44px]"></div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleGoogleLoginSimulate}
+                  className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-350 hover:text-slate-900 dark:hover:text-slate-100 transition-all text-sm font-semibold shadow-sm"
+                >
+                  {/* Standard Google vector logo */}
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.24 1 3.2 3.73 1.24 7.68l3.87 3a7 7 0 0 1 6.89-5.64z"/>
+                    <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.27H12v4.51h6.47a5.53 5.53 0 0 1-2.4 3.63v3.01h3.87c2.26-2.08 3.55-5.14 3.55-8.88z"/>
+                    <path fill="#FBBC05" d="M5.11 10.68a6.97 6.97 0 0 1 0-4.36L1.24 3.32a11.96 11.96 0 0 0 0 10.36l3.87-3z"/>
+                    <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.87-3c-1.1.74-2.5 1.18-4.09 1.18a7 7 0 0 1-6.89-5.64l-3.87 3A11.97 11.97 0 0 0 12 23z"/>
+                  </svg>
+                  <span>Google OAuth (Simulator Mode)</span>
+                </button>
+              )}
             </div>
           )}
  
