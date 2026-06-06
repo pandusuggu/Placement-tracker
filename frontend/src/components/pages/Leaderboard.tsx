@@ -102,9 +102,17 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onViewProfile }) => {
                     #2
                   </div>
                   <div className="flex flex-col items-center space-y-3 pt-4">
-                    <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 flex items-center justify-center font-black text-2xl text-slate-600 dark:text-slate-300 shadow">
-                      {podium[1].name.charAt(0).toUpperCase()}
-                    </div>
+                    {podium[1].avatar && (podium[1].avatar.startsWith('http://') || podium[1].avatar.startsWith('https://') || podium[1].avatar.startsWith('data:image/')) ? (
+                      <img 
+                        src={podium[1].avatar} 
+                        alt={podium[1].name} 
+                        className="w-16 h-16 rounded-full object-cover border border-slate-300 dark:border-slate-600 shadow select-none"
+                      />
+                    ) : (
+                      <div className={`w-16 h-16 rounded-full ${podium[1].avatar ? `bg-gradient-to-br ${podium[1].avatar} text-white` : 'bg-slate-200 dark:bg-slate-800 text-slate-650 dark:text-slate-350'} border border-slate-300 dark:border-slate-600 flex items-center justify-center font-black text-2xl shadow select-none`}>
+                        {podium[1].name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <h4 className="font-extrabold text-slate-800 dark:text-slate-200 text-sm truncate max-w-[150px]">{podium[1].name}</h4>
                       <p className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[150px] mt-0.5">{podium[1].target_role}</p>
@@ -132,9 +140,17 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onViewProfile }) => {
                     👑
                   </div>
                   <div className="flex flex-col items-center space-y-3 pt-6">
-                    <div className="w-20 h-20 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center font-black text-3xl text-primary shadow">
-                      {podium[0].name.charAt(0).toUpperCase()}
-                    </div>
+                    {podium[0].avatar && (podium[0].avatar.startsWith('http://') || podium[0].avatar.startsWith('https://') || podium[0].avatar.startsWith('data:image/')) ? (
+                      <img 
+                        src={podium[0].avatar} 
+                        alt={podium[0].name} 
+                        className="w-20 h-20 rounded-full object-cover border-2 border-primary shadow select-none"
+                      />
+                    ) : (
+                      <div className={`w-20 h-20 rounded-full ${podium[0].avatar ? `bg-gradient-to-br ${podium[0].avatar} text-white` : 'bg-primary/10 text-primary'} border-2 border-primary flex items-center justify-center font-black text-3xl shadow select-none`}>
+                        {podium[0].name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <h4 className="font-black text-slate-800 dark:text-slate-100 text-base truncate max-w-[180px]">{podium[0].name}</h4>
                       <p className="text-[10px] text-primary font-bold uppercase truncate max-w-[180px] mt-0.5 tracking-wider">{podium[0].target_role}</p>
@@ -162,9 +178,17 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onViewProfile }) => {
                     #3
                   </div>
                   <div className="flex flex-col items-center space-y-3 pt-4">
-                    <div className="w-14 h-14 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-650 flex items-center justify-center font-black text-xl text-slate-600 dark:text-slate-350 shadow">
-                      {podium[2].name.charAt(0).toUpperCase()}
-                    </div>
+                    {podium[2].avatar && (podium[2].avatar.startsWith('http://') || podium[2].avatar.startsWith('https://') || podium[2].avatar.startsWith('data:image/')) ? (
+                      <img 
+                        src={podium[2].avatar} 
+                        alt={podium[2].name} 
+                        className="w-14 h-14 rounded-full object-cover border border-slate-300 dark:border-slate-650 shadow select-none"
+                      />
+                    ) : (
+                      <div className={`w-14 h-14 rounded-full ${podium[2].avatar ? `bg-gradient-to-br ${podium[2].avatar} text-white` : 'bg-slate-200 dark:bg-slate-800 text-slate-650 dark:text-slate-350'} border border-slate-300 dark:border-slate-650 flex items-center justify-center font-black text-xl shadow select-none`}>
+                        {podium[2].name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <h4 className="font-extrabold text-slate-800 dark:text-slate-200 text-sm truncate max-w-[150px]">{podium[2].name}</h4>
                       <p className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[150px] mt-0.5">{podium[2].target_role}</p>
@@ -229,9 +253,17 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onViewProfile }) => {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-350 dark:border-slate-700 flex items-center justify-center font-bold text-slate-750 dark:text-slate-250 select-none">
-                              {item.name.charAt(0).toUpperCase()}
-                            </div>
+                            {item.avatar && (item.avatar.startsWith('http://') || item.avatar.startsWith('https://') || item.avatar.startsWith('data:image/')) ? (
+                              <img 
+                                src={item.avatar} 
+                                alt={item.name} 
+                                className="w-8 h-8 rounded-full object-cover border border-slate-350 dark:border-slate-700 shadow-sm select-none"
+                              />
+                            ) : (
+                              <div className={`w-8 h-8 rounded-full ${item.avatar ? `bg-gradient-to-br ${item.avatar} text-white` : 'bg-slate-200 dark:bg-slate-800 text-slate-750 dark:text-slate-250'} border border-slate-350 dark:border-slate-700 flex items-center justify-center font-bold select-none`}>
+                                {item.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                             <div>
                               <h5 className="font-extrabold text-slate-800 dark:text-slate-200 text-xs">{item.name}</h5>
                               <p className="text-[10px] text-slate-400 lowercase font-medium">{item.email}</p>

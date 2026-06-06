@@ -7,6 +7,7 @@ interface AdminUserItem {
   id: string
   name: string
   email: string
+  avatar?: string
   college: string
   branch: string
   target_role: string
@@ -376,9 +377,17 @@ export const Admin: React.FC = () => {
                         <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-all">
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-350 dark:border-slate-700 flex items-center justify-center font-bold text-slate-750 dark:text-slate-250 select-none">
-                                {user.name.charAt(0).toUpperCase()}
-                              </div>
+                              {user.avatar && (user.avatar.startsWith('http://') || user.avatar.startsWith('https://') || user.avatar.startsWith('data:image/')) ? (
+                                <img 
+                                  src={user.avatar} 
+                                  alt={user.name} 
+                                  className="w-8 h-8 rounded-full object-cover border border-slate-350 dark:border-slate-700 shadow-sm select-none"
+                                />
+                              ) : (
+                                <div className={`w-8 h-8 rounded-full ${user.avatar ? `bg-gradient-to-br ${user.avatar} text-white` : 'bg-slate-200 dark:bg-slate-800 text-slate-750 dark:text-slate-250'} border border-slate-350 dark:border-slate-700 flex items-center justify-center font-bold select-none`}>
+                                  {user.name.charAt(0).toUpperCase()}
+                                </div>
+                              )}
                               <div>
                                 <h5 className="font-extrabold text-slate-800 dark:text-slate-200 text-xs">{user.name}</h5>
                                 <p className="text-[10px] text-slate-400 lowercase font-medium">{user.email}</p>

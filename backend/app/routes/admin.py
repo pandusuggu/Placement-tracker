@@ -66,6 +66,7 @@ async def get_admin_stats(admin: User = Depends(require_admin)):
             "branch": u.branch or "N/A",
             "target_role": u.target_role or "Software Engineer",
             "role": getattr(u, "role", "user"),
+            "avatar": u.avatar,
             "created_at": u.created_at,
             "last_active": getattr(u, "last_active", u.created_at)
         })
