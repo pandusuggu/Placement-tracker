@@ -177,8 +177,8 @@ export const Onboarding: React.FC = () => {
             <Brain size={18} className="animate-pulse" />
           </div>
           <div>
-            <h1 className="text-base font-black tracking-tight flex items-center gap-1.5">
-              CodePilot AI
+            <h1 className="text-base font-black tracking-tight flex items-center gap-1.5 font-sans">
+              Placement Tracker and Productivity Planner
               <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                 Setup
               </span>
@@ -635,7 +635,7 @@ export const Onboarding: React.FC = () => {
 
       {/* Footer copyright */}
       <footer className="max-w-6xl w-full mx-auto text-center text-[10px] text-slate-400 font-semibold py-3 border-t border-border-light dark:border-border-dark shrink-0">
-        &copy; {new Date().getFullYear()} CodePilot AI. Built for premium career placement and preparation insights.
+        &copy; {new Date().getFullYear()} Placement Tracker and Productivity Planner. Built for premium career placement and preparation insights.
       </footer>
     </div>
   )

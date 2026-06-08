@@ -11,6 +11,7 @@ import { DSA_QUESTIONS } from './neetcodeQuestions'
 import { BLIND75_QUESTIONS } from './blind75Questions'
 import { DEFAULT_DSA_YOUTUBE_LINKS } from './dsaYoutubeDefaults'
 import { MarkdownRenderer } from '../common/MarkdownRenderer'
+import { useAuthStore } from '../../store/authStore'
 
 interface Project {
   name: string
@@ -301,6 +302,7 @@ const APTITUDE_QUESTIONS: Record<string, string[]> = {
 }
 
 export const Prep: React.FC = () => {
+  const { user } = useAuthStore()
   const [progress, setProgress] = useState<ProgressData | null>(null)
   const [readiness, setReadiness] = useState<PlacementReadiness | null>(null)
   const [loading, setLoading] = useState(true)
@@ -723,7 +725,7 @@ export const Prep: React.FC = () => {
       const dbCompleted: Record<string, boolean> = {}
       
       // Fallback to local storage if needed
-      const saved = localStorage.getItem('completed_mock_questions')
+      const saved = user ? localStorage.getItem(`completed_mock_questions_${user.id}`) : null
       if (saved) {
         try {
           Object.assign(dbCompleted, JSON.parse(saved))
@@ -832,7 +834,9 @@ export const Prep: React.FC = () => {
       [questionId]: isNowCompleted
     }
     setCompletedQuestions(nextCompleted)
-    localStorage.setItem('completed_mock_questions', JSON.stringify(nextCompleted))
+    if (user) {
+      localStorage.setItem(`completed_mock_questions_${user.id}`, JSON.stringify(nextCompleted))
+    }
 
     // Save individual question state to DB!
     try {
@@ -901,7 +905,9 @@ export const Prep: React.FC = () => {
       }
       
       setCompletedQuestions(nextCompleted)
-      localStorage.setItem('completed_mock_questions', JSON.stringify(nextCompleted))
+      if (user) {
+        localStorage.setItem(`completed_mock_questions_${user.id}`, JSON.stringify(nextCompleted))
+      }
 
       const readRes = await api.get('/api/placement/readiness')
       setReadiness(readRes.data)
@@ -2780,7 +2786,7 @@ export const Prep: React.FC = () => {
                   className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed font-semibold shadow-sm ${
+                    className={`max-w-[85%] min-w-0 overflow-hidden rounded-2xl p-3 text-xs leading-relaxed font-semibold shadow-sm ${
                       m.role === 'user'
                         ? 'bg-primary text-white rounded-tr-none'
                         : 'bg-slate-100 dark:bg-slate-950/70 border border-slate-200/50 dark:border-slate-850 text-slate-700 dark:text-slate-300 rounded-tl-none'

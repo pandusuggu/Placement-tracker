@@ -17,7 +17,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ className, children }) => {
   }
 
   return (
-    <div className="relative my-3.5 group">
+    <div className="relative my-3.5 group w-full max-w-full overflow-hidden">
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
         <button
           type="button"
@@ -27,8 +27,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ className, children }) => {
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      <pre className="bg-slate-950/90 dark:bg-slate-950 text-slate-100 p-4 rounded-xl border border-slate-850 overflow-x-auto font-mono text-[11px] leading-relaxed custom-scrollbar shadow-lg">
-        <code className={className}>{children}</code>
+      <pre className="bg-slate-950/90 dark:bg-slate-950 text-slate-100 p-4 rounded-xl border border-slate-850 overflow-x-auto w-full max-w-full font-mono text-[11px] leading-relaxed custom-scrollbar shadow-lg">
+        <code className={`block whitespace-pre ${className || ''}`}>{children}</code>
       </pre>
     </div>
   )

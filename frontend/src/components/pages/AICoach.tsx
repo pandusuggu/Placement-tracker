@@ -544,7 +544,7 @@ export const AICoach: React.FC = () => {
                   className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed font-medium ${
+                    className={`max-w-[85%] min-w-0 overflow-hidden rounded-2xl p-3 text-xs leading-relaxed font-medium ${
                       m.role === 'user'
                         ? 'bg-primary text-white rounded-tr-none shadow-blue'
                         : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200/50 dark:border-slate-800'
