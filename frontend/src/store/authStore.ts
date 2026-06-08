@@ -12,6 +12,7 @@ interface UserProfile {
   target_role: string
   daily_available_hours: number
   role?: string
+  onboarded?: boolean
 }
 
 interface AuthState {

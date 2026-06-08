@@ -21,6 +21,7 @@ import { Leaderboard } from './components/pages/Leaderboard'
 import { Admin } from './components/pages/Admin'
 import { Community } from './components/pages/Community'
 import { Profile } from './components/pages/Profile'
+import { Onboarding } from './components/pages/Onboarding'
 
 export const App: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore()
@@ -38,6 +39,11 @@ export const App: React.FC = () => {
   // If not signed in, force authentication forms
   if (!isAuthenticated) {
     return <Auth />
+  }
+
+  // If signed in but not onboarded, redirect to onboarding flow
+  if (user && !user.onboarded) {
+    return <Onboarding />
   }
 
   // Set tab and reset viewing user ID

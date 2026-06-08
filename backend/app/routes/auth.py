@@ -46,6 +46,19 @@ class GoogleLoginSchema(BaseModel):
     name: Optional[str] = None
     avatar: Optional[str] = None
 
+class OnboardSchema(BaseModel):
+    college: Optional[str] = None
+    branch: Optional[str] = None
+    cgpa: Optional[float] = None
+    graduation_year: Optional[int] = None
+    target_role: str
+    daily_available_hours: float
+    leetcode_username: Optional[str] = None
+    gfg_username: Optional[str] = None
+    codechef_username: Optional[str] = None
+    hackerrank_username: Optional[str] = None
+    avatar: Optional[str] = None
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(data: RegisterSchema):
     # Check if email exists
@@ -103,7 +116,8 @@ async def register(data: RegisterSchema):
             "daily_available_hours": user.daily_available_hours,
             "role": user.role,
             "college": user.college,
-            "branch": user.branch
+            "branch": user.branch,
+            "onboarded": user.onboarded
         }
     }
 
@@ -131,7 +145,8 @@ async def login(data: LoginSchema):
             "graduation_year": user.graduation_year,
             "target_role": user.target_role,
             "daily_available_hours": user.daily_available_hours,
-            "role": user.role
+            "role": user.role,
+            "onboarded": getattr(user, "onboarded", False)
         }
     }
 
@@ -149,6 +164,7 @@ async def get_me(user: User = Depends(get_current_user)):
         "target_role": user.target_role,
         "daily_available_hours": user.daily_available_hours,
         "role": user.role,
+        "onboarded": getattr(user, "onboarded", False),
         "created_at": user.created_at
     }
 
@@ -184,7 +200,8 @@ async def update_profile(data: ProfileUpdateSchema, user: User = Depends(get_cur
             "cgpa": getattr(user, "cgpa", None),
             "graduation_year": user.graduation_year,
             "target_role": user.target_role,
-            "daily_available_hours": user.daily_available_hours
+            "daily_available_hours": user.daily_available_hours,
+            "onboarded": getattr(user, "onboarded", False)
         }
     }
 
@@ -283,7 +300,8 @@ async def google_login(data: GoogleLoginSchema):
             "cgpa": getattr(user, "cgpa", None),
             "graduation_year": user.graduation_year,
             "target_role": user.target_role,
-            "daily_available_hours": user.daily_available_hours
+            "daily_available_hours": user.daily_available_hours,
+            "onboarded": getattr(user, "onboarded", False)
         }
     }
 
@@ -352,5 +370,62 @@ async def get_public_profile(user_id: str, current_user: User = Depends(get_curr
         "readiness": readiness_data,
         "weekly_rank": weekly_rank,
         "weekly_score": weekly_score
+    }
+
+@router.put("/onboard")
+async def onboard_user(data: OnboardSchema, user: User = Depends(get_current_user)):
+    user.college = data.college
+    user.branch = data.branch
+    user.cgpa = data.cgpa
+    user.graduation_year = data.graduation_year
+    user.target_role = data.target_role
+    user.daily_available_hours = data.daily_available_hours
+    if data.avatar is not None:
+        user.avatar = data.avatar
+    user.onboarded = True
+    await user.save()
+
+    # Update or create CodingProgress to sync handles
+    progress = await CodingProgress.find_one(CodingProgress.user_id == user.id)
+    if not progress:
+        progress = CodingProgress(
+            user_id=user.id,
+            leetcode_username=data.leetcode_username or "",
+            gfg_username=data.gfg_username or "",
+            hackerrank_username=data.hackerrank_username or "",
+            codechef_username=data.codechef_username or "",
+            dsa_progress={},
+            core_subjects_progress={"DBMS": 0.0, "OS": 0.0, "CN": 0.0, "OOP": 0.0},
+            aptitude_progress={"Quantitative Aptitude": 0.0, "Logical Reasoning": 0.0, "Verbal Ability": 0.0},
+            projects_progress=[]
+        )
+        await progress.create()
+    else:
+        if data.leetcode_username is not None:
+            progress.leetcode_username = data.leetcode_username
+        if data.gfg_username is not None:
+            progress.gfg_username = data.gfg_username
+        if data.hackerrank_username is not None:
+            progress.hackerrank_username = data.hackerrank_username
+        if data.codechef_username is not None:
+            progress.codechef_username = data.codechef_username
+        await progress.save()
+
+    return {
+        "message": "Onboarding completed successfully",
+        "user": {
+            "id": str(user.id),
+            "name": user.name,
+            "email": user.email,
+            "avatar": user.avatar,
+            "college": user.college,
+            "branch": user.branch,
+            "cgpa": getattr(user, "cgpa", None),
+            "graduation_year": user.graduation_year,
+            "target_role": user.target_role,
+            "daily_available_hours": user.daily_available_hours,
+            "role": user.role,
+            "onboarded": user.onboarded
+        }
     }
 

@@ -14,6 +14,7 @@ class User(Document):
     graduation_year: Optional[int] = None
     target_role: Optional[str] = "Software Engineer"
     daily_available_hours: Optional[float] = 4.0
+    onboarded: bool = False
     role: str = "user"
     last_active: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
