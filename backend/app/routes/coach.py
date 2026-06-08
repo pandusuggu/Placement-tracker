@@ -234,62 +234,45 @@ async def coach_chat(data: CoachChatInput, user: User = Depends(verify_ai_rate_l
         messages.append({"role": msg.role, "content": msg.content})
     messages.append({"role": "user", "content": data.message})
 
-    # Call Groq API
+    # Call central key-rotating LLM service
     response_text = "Sorry, I am unable to connect to the AI Coach service right now."
-    if settings.groq_api_key:
+    try:
+        response_text = await AIService.call_llm(
+            messages=messages,
+            user_id=user.id,
+            temperature=0.3,
+            max_tokens=700
+        )
+        # Store both user question and AI response in MongoDB
         try:
-            import httpx
-            headers = {
-                "Authorization": f"Bearer {settings.groq_api_key}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "model": "llama-3.1-8b-instant",
-                "messages": messages,
-                "temperature": 0.3,
-                "max_tokens": 700
-            }
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers=headers,
-                    json=payload
-                )
-                if response.status_code == 200:
-                    res_json = response.json()
-                    response_text = res_json["choices"][0]["message"]["content"].strip()
-                    
-                    # Store both user question and AI response in MongoDB
-                    try:
-                        user_msg_doc = AICoachMessage(
-                            user_id=user.id,
-                            role="user",
-                            content=data.message,
-                            chat_type=chat_type
-                        )
-                        await user_msg_doc.create()
-                        
-                        assistant_msg_doc = AICoachMessage(
-                            user_id=user.id,
-                            role="assistant",
-                            content=response_text,
-                            chat_type=chat_type
-                        )
-                        await assistant_msg_doc.create()
-                    except Exception as me:
-                        logger.error(f"Failed to persist chat messages in MongoDB: {me}")
+            user_msg_doc = AICoachMessage(
+                user_id=user.id,
+                role="user",
+                content=data.message,
+                chat_type=chat_type
+            )
+            await user_msg_doc.create()
+            
+            assistant_msg_doc = AICoachMessage(
+                user_id=user.id,
+                role="assistant",
+                content=response_text,
+                chat_type=chat_type
+            )
+            await assistant_msg_doc.create()
+        except Exception as me:
+            logger.error(f"Failed to persist chat messages in MongoDB: {me}")
 
-                    # Log AI Request in database
-                    try:
-                        from app.models.ai_log import AIRequestLog
-                        log_doc = AIRequestLog(user_id=user.id, request_type="coach_chat")
-                        await log_doc.create()
-                    except Exception as le:
-                        logger.error(f"Failed to log AI coach chat request: {le}")
-                else:
-                    logger.error(f"Groq API chat failed: {response.text}")
-        except Exception as e:
-            logger.exception("AI Coach Chat invocation failed.")
+        # Log AI Request in database
+        try:
+            from app.models.ai_log import AIRequestLog
+            log_doc = AIRequestLog(user_id=user.id, request_type="coach_chat")
+            await log_doc.create()
+        except Exception as le:
+            logger.error(f"Failed to log AI coach chat request: {le}")
+
+    except Exception as e:
+        logger.exception("AI Coach Chat invocation failed.")
             
     return {"response": response_text}
 

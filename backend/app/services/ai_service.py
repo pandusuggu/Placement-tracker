@@ -38,17 +38,43 @@ class AIService:
         return json.loads(text)
 
     @staticmethod
-    async def call_llm(prompt: str, is_automatic: bool = False, user_id: Optional[PydanticObjectId] = None) -> str:
+    async def call_llm(
+        prompt: Optional[str] = None,
+        messages: Optional[List[Dict[str, str]]] = None,
+        is_automatic: bool = False,
+        user_id: Optional[PydanticObjectId] = None,
+        temperature: float = 0.2,
+        max_tokens: int = 400,
+        response_format: Optional[dict] = None
+    ) -> str:
         """
-        Sends prompt to Groq API if configured (supports key rotation & failover), otherwise falls back to Gemini API.
+        Sends prompt or custom messages to Groq API if configured (supports key rotation & failover), otherwise falls back to Gemini API.
         Throws ValueError if no active API providers are available.
         """
+        if not prompt and not messages:
+            raise ValueError("Either prompt or messages must be provided.")
+
         # Parse all available keys from settings
         keys_pool = []
         if settings.groq_api_keys:
             keys_pool = [k.strip() for k in settings.groq_api_keys.split(",") if k.strip()]
         if settings.groq_api_key and settings.groq_api_key not in keys_pool:
             keys_pool.append(settings.groq_api_key)
+
+        # Build messages and response_format if not provided
+        if not messages:
+            messages = [
+                {
+                    "role": "system", 
+                    "content": "You are a professional student technical placement coach. Return only the raw JSON payload matching the requested keys, with no surrounding markdown formatting. Be highly concise and precise. Avoid any unnecessary introductory or concluding text."
+                },
+                {
+                    "role": "user", 
+                    "content": prompt
+                }
+            ]
+            if response_format is None:
+                response_format = {"type": "json_object"}
 
         result_text = None
         if keys_pool:
@@ -66,20 +92,13 @@ class AIService:
                     }
                     payload = {
                         "model": "llama-3.1-8b-instant",  # Default ultra-fast Groq model
-                        "messages": [
-                            {
-                                "role": "system", 
-                                "content": "You are a professional student technical placement coach. Return only the raw JSON payload matching the requested keys, with no surrounding markdown formatting. Be highly concise and precise. Avoid any unnecessary introductory or concluding text."
-                            },
-                            {
-                                "role": "user", 
-                                "content": prompt
-                            }
-                        ],
-                        "response_format": {"type": "json_object"},  # Enable JSON Mode
-                        "temperature": 0.2,
-                        "max_tokens": 400
+                        "messages": messages,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens
                     }
+                    if response_format:
+                        payload["response_format"] = response_format
+
                     async with httpx.AsyncClient(timeout=30.0) as client:
                         response = await client.post(
                             "https://api.groq.com/openai/v1/chat/completions",
@@ -101,8 +120,25 @@ class AIService:
         if not result_text and has_gemini:
             try:
                 import google.generativeai as genai
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                response = model.generate_content(prompt)
+                if messages:
+                    # Convert OpenAI message format to Gemini format
+                    gemini_contents = []
+                    system_instruction = None
+                    for msg in messages:
+                        if msg["role"] == "system":
+                            system_instruction = msg["content"]
+                        else:
+                            role = "user" if msg["role"] == "user" else "model"
+                            gemini_contents.append({"role": role, "parts": [msg["content"]]})
+                    
+                    if system_instruction:
+                        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
+                    else:
+                        model = genai.GenerativeModel("gemini-1.5-flash")
+                    response = model.generate_content(gemini_contents)
+                else:
+                    model = genai.GenerativeModel("gemini-1.5-flash")
+                    response = model.generate_content(prompt)
                 result_text = response.text.strip()
             except Exception as e:
                 logger.exception("Gemini API invocation failed.")
@@ -120,6 +156,7 @@ class AIService:
                 logger.error(f"Failed to log AI request in db: {le}")
 
         return result_text
+
  
     @staticmethod
     async def generate_study_roadmap(
