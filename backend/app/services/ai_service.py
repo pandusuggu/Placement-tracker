@@ -40,46 +40,63 @@ class AIService:
     @staticmethod
     async def call_llm(prompt: str, is_automatic: bool = False, user_id: Optional[PydanticObjectId] = None) -> str:
         """
-        Sends prompt to Groq API if configured, otherwise falls back to Gemini API.
+        Sends prompt to Groq API if configured (supports key rotation & failover), otherwise falls back to Gemini API.
         Throws ValueError if no active API providers are available.
         """
+        # Parse all available keys from settings
+        keys_pool = []
+        if settings.groq_api_keys:
+            keys_pool = [k.strip() for k in settings.groq_api_keys.split(",") if k.strip()]
+        if settings.groq_api_key and settings.groq_api_key not in keys_pool:
+            keys_pool.append(settings.groq_api_key)
+
         result_text = None
-        if settings.groq_api_key:
-            try:
-                # Call Groq API via HTTP POST using standard OpenAI chat format
-                headers = {
-                    "Authorization": f"Bearer {settings.groq_api_key}",
-                    "Content-Type": "application/json"
-                }
-                payload = {
-                    "model": "llama-3.1-8b-instant",  # Default ultra-fast Groq model
-                    "messages": [
-                        {
-                            "role": "system", 
-                            "content": "You are a professional student technical placement coach. Return only the raw JSON payload matching the requested keys, with no surrounding markdown formatting. Be highly concise and precise. Avoid any unnecessary introductory or concluding text."
-                        },
-                        {
-                            "role": "user", 
-                            "content": prompt
-                        }
-                    ],
-                    "response_format": {"type": "json_object"},  # Enable JSON Mode
-                    "temperature": 0.2,
-                    "max_tokens": 400
-                }
-                async with httpx.AsyncClient(timeout=30.0) as client:
-                    response = await client.post(
-                        "https://api.groq.com/openai/v1/chat/completions",
-                        headers=headers,
-                        json=payload
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        result_text = data["choices"][0]["message"]["content"].strip()
-                    else:
-                        logger.error(f"Groq API returned error status {response.status_code}: {response.text}")
-            except Exception as e:
-                logger.exception("Groq API invocation failed. Falling back to Gemini.")
+        if keys_pool:
+            import random
+            shuffled_keys = keys_pool.copy()
+            random.shuffle(shuffled_keys)
+
+            for idx, api_key in enumerate(shuffled_keys, 1):
+                masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "invalid_key"
+                try:
+                    logger.info(f"Attempting Groq API call using key {idx}/{len(shuffled_keys)} ({masked_key})...")
+                    headers = {
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    }
+                    payload = {
+                        "model": "llama-3.1-8b-instant",  # Default ultra-fast Groq model
+                        "messages": [
+                            {
+                                "role": "system", 
+                                "content": "You are a professional student technical placement coach. Return only the raw JSON payload matching the requested keys, with no surrounding markdown formatting. Be highly concise and precise. Avoid any unnecessary introductory or concluding text."
+                            },
+                            {
+                                "role": "user", 
+                                "content": prompt
+                            }
+                        ],
+                        "response_format": {"type": "json_object"},  # Enable JSON Mode
+                        "temperature": 0.2,
+                        "max_tokens": 400
+                    }
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        response = await client.post(
+                            "https://api.groq.com/openai/v1/chat/completions",
+                            headers=headers,
+                            json=payload
+                        )
+                        if response.status_code == 200:
+                            data = response.json()
+                            result_text = data["choices"][0]["message"]["content"].strip()
+                            logger.info(f"Groq API call succeeded using key ({masked_key}).")
+                            break
+                        elif response.status_code == 429:
+                            logger.warning(f"Groq API key ({masked_key}) was rate limited (429). Trying next key...")
+                        else:
+                            logger.error(f"Groq API returned error status {response.status_code} for key ({masked_key}): {response.text}")
+                except Exception as e:
+                    logger.exception(f"Groq API call failed using key ({masked_key}). Trying next key...")
 
         if not result_text and has_gemini:
             try:

@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="supersecretjwtkeyforcodepilotai2026", alias="JWT_SECRET")
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
     groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
+    groq_api_keys: str = Field(default="", alias="GROQ_API_KEYS")
     port: int = Field(default=8000, alias="PORT")
     environment: str = Field(default="development", alias="ENVIRONMENT")
     admin_passcode: str = Field(default="admin123", alias="ADMIN_PASSCODE")
