@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Brain, AlertTriangle, ShieldCheck, Heart, RefreshCw, MessageSquare, Sparkles, Check } from 'lucide-react'
 import api from '../../services/api'
+import { MarkdownRenderer } from '../common/MarkdownRenderer'
+
 
 interface CoachDiagnostic {
   productivity_score: number
@@ -548,7 +550,11 @@ export const AICoach: React.FC = () => {
                         : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200/50 dark:border-slate-800'
                     }`}
                   >
-                    <div className="whitespace-pre-line leading-relaxed">{m.content}</div>
+                    {m.role === 'user' ? (
+                      <div className="whitespace-pre-line leading-relaxed">{m.content}</div>
+                    ) : (
+                      <MarkdownRenderer content={m.content} />
+                    )}
                   </div>
                 </div>
               ))}

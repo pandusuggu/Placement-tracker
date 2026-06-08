@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Sparkles, Calendar, Clock, Target, Plus, X } from 'lucide-react'
 import api from '../../services/api'
+import { MarkdownRenderer } from '../common/MarkdownRenderer'
+
 
 interface RoadmapData {
   id: string
@@ -213,8 +215,8 @@ export const AIPlanner: React.FC = () => {
                   <Clock size={16} className="text-primary" />
                   <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Daily Study Checklist Outline</h4>
                 </div>
-                <div className="text-xs leading-relaxed text-slate-600 dark:text-slate-400 whitespace-pre-line bg-slate-100/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200/50 dark:border-slate-850">
-                  {roadmap.daily_plan}
+                <div className="bg-slate-100/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200/50 dark:border-slate-850">
+                  <MarkdownRenderer content={roadmap.daily_plan} />
                 </div>
               </div>
 
@@ -224,8 +226,8 @@ export const AIPlanner: React.FC = () => {
                   <Calendar size={16} className="text-accent-violet" />
                   <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Weekly Milestones Strategy</h4>
                 </div>
-                <div className="text-xs leading-relaxed text-slate-600 dark:text-slate-400 whitespace-pre-line bg-slate-100/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200/50 dark:border-slate-850">
-                  {roadmap.weekly_roadmap}
+                <div className="bg-slate-100/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200/50 dark:border-slate-850">
+                  <MarkdownRenderer content={roadmap.weekly_roadmap} />
                 </div>
               </div>
 

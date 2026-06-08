@@ -10,6 +10,7 @@ import api from '../../services/api'
 import { DSA_QUESTIONS } from './neetcodeQuestions'
 import { BLIND75_QUESTIONS } from './blind75Questions'
 import { DEFAULT_DSA_YOUTUBE_LINKS } from './dsaYoutubeDefaults'
+import { MarkdownRenderer } from '../common/MarkdownRenderer'
 
 interface Project {
   name: string
@@ -2785,7 +2786,11 @@ export const Prep: React.FC = () => {
                         : 'bg-slate-100 dark:bg-slate-950/70 border border-slate-200/50 dark:border-slate-850 text-slate-700 dark:text-slate-300 rounded-tl-none'
                     }`}
                   >
-                    <div className="whitespace-pre-line">{m.content}</div>
+                    {m.role === 'user' ? (
+                      <div className="whitespace-pre-line">{m.content}</div>
+                    ) : (
+                      <MarkdownRenderer content={m.content} />
+                    )}
                   </div>
                 </div>
               ))}
