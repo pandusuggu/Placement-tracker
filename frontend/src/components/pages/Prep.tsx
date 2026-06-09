@@ -13,6 +13,7 @@ import { DEFAULT_DSA_YOUTUBE_LINKS } from './dsaYoutubeDefaults'
 import { MarkdownRenderer } from '../common/MarkdownRenderer'
 import { useAuthStore } from '../../store/authStore'
 import { YouTubePlayerModal } from '../common/YouTubePlayerModal'
+import { CodeSandboxModal } from '../common/CodeSandboxModal'
 
 interface Project {
   name: string
@@ -360,6 +361,27 @@ export const Prep: React.FC = () => {
   const [generatingAptitudeTopic, setGeneratingAptitudeTopic] = useState<string | null>(null)
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null)
   const [activeVideoTitle, setActiveVideoTitle] = useState<string | null>(null)
+
+  // Code Sandbox States
+  const [sandboxOpen, setSandboxOpen] = useState(false)
+  const [sandboxQuestionId, setSandboxQuestionId] = useState('')
+  const [sandboxTitle, setSandboxTitle] = useState('')
+  const [sandboxDifficulty, setSandboxDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Easy')
+  const [sandboxTopic, setSandboxTopic] = useState('')
+
+  const handleOpenSandbox = (questionId: string, title: string, difficulty: 'Easy' | 'Medium' | 'Hard', topicName: string) => {
+    setSandboxQuestionId(questionId)
+    setSandboxTitle(title)
+    setSandboxDifficulty(difficulty)
+    setSandboxTopic(topicName)
+    setSandboxOpen(true)
+  }
+
+  const handleQuestionCompletedFromSandbox = (questionId: string) => {
+    if (!completedQuestions[questionId]) {
+      handleToggleQuestion(sandboxTopic, questionId)
+    }
+  }
 
   // Helper: check if a theoretical question is checked
   const isCSQuestionChecked = (subject: string, index: number) => {
@@ -1471,7 +1493,10 @@ export const Prep: React.FC = () => {
                                           >
                                             {isQChecked && <Check size={10} strokeWidth={3} />}
                                           </button>
-                                          <span className={`${isQChecked ? 'line-through text-slate-400 dark:text-slate-550' : 'text-slate-700 dark:text-slate-300'}`}>
+                                          <span
+                                            onClick={() => handleOpenSandbox(q.id, q.title, q.difficulty, topic)}
+                                            className="cursor-pointer hover:text-primary transition-colors `${isQChecked ? 'line-through text-slate-400 dark:text-slate-550' : 'text-slate-700 dark:text-slate-300'}`"
+                                          >
                                             {q.title}
                                           </span>
                                         </div>
@@ -1532,15 +1557,13 @@ export const Prep: React.FC = () => {
                                             </button>
                                           )}
 
-                                          <a 
-                                            href={q.link}
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-100 transition-all"
-                                            title="Solve on Leetcode"
+                                          <button
+                                            onClick={() => handleOpenSandbox(q.id, q.title, q.difficulty, topic)}
+                                            className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-100 transition-all cursor-pointer"
+                                            title="Solve in Sandbox"
                                           >
                                             <ExternalLink size={12} />
-                                          </a>
+                                          </button>
                                         </div>
                                       </div>
                                     )
@@ -1676,7 +1699,10 @@ export const Prep: React.FC = () => {
                                           >
                                             {isQChecked && <Check size={10} strokeWidth={3} />}
                                           </button>
-                                          <span className={`${isQChecked ? 'line-through text-slate-400 dark:text-slate-550' : 'text-slate-700 dark:text-slate-300'}`}>
+                                          <span
+                                            onClick={() => handleOpenSandbox(q.id, q.title, q.difficulty, topic)}
+                                            className="cursor-pointer hover:text-primary transition-colors `${isQChecked ? 'line-through text-slate-400 dark:text-slate-550' : 'text-slate-700 dark:text-slate-300'}`"
+                                          >
                                             {q.title}
                                           </span>
                                         </div>
@@ -1737,15 +1763,13 @@ export const Prep: React.FC = () => {
                                             </button>
                                           )}
 
-                                          <a 
-                                            href={q.link}
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-100 transition-all"
-                                            title="Solve on Leetcode"
+                                          <button
+                                            onClick={() => handleOpenSandbox(q.id, q.title, q.difficulty, topic)}
+                                            className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-100 transition-all cursor-pointer"
+                                            title="Solve in Sandbox"
                                           >
                                             <ExternalLink size={12} />
-                                          </a>
+                                          </button>
                                         </div>
                                       </div>
                                     )
@@ -2848,6 +2872,15 @@ export const Prep: React.FC = () => {
           setActiveVideoUrl(null)
           setActiveVideoTitle(null)
         }}
+      />
+
+      <CodeSandboxModal
+        isOpen={sandboxOpen}
+        questionId={sandboxQuestionId}
+        title={sandboxTitle}
+        difficulty={sandboxDifficulty}
+        onClose={() => setSandboxOpen(false)}
+        onQuestionCompleted={handleQuestionCompletedFromSandbox}
       />
     </div>
   )

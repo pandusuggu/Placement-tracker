@@ -44,8 +44,9 @@ class AIService:
         is_automatic: bool = False,
         user_id: Optional[PydanticObjectId] = None,
         temperature: float = 0.2,
-        max_tokens: int = 400,
-        response_format: Optional[dict] = None
+        max_tokens: int = 2048,
+        response_format: Optional[dict] = None,
+        model: str = "llama-3.1-8b-instant"
     ) -> str:
         """
         Sends prompt or custom messages to Groq API if configured (supports key rotation & failover), otherwise falls back to Gemini API.
@@ -91,7 +92,7 @@ class AIService:
                         "Content-Type": "application/json"
                     }
                     payload = {
-                        "model": "llama-3.1-8b-instant",  # Default ultra-fast Groq model
+                        "model": model,
                         "messages": messages,
                         "temperature": temperature,
                         "max_tokens": max_tokens
@@ -584,3 +585,60 @@ class AIService:
             f"Prepare a walk-through explanation of your major resume project related to {round_name}.",
             f"Solve standard practice problems covering topics listed under: {round_desc}."
         ]
+
+    @staticmethod
+    async def generate_problem_specification(title: str, difficulty: str, question_id: str, user_id: Optional[PydanticObjectId] = None) -> dict:
+        """
+        Generates problem description, starting templates, and validation testing harnesses for a DSA coding problem.
+        """
+        prompt = f"""
+        Act as a professional DSA challenge content creator.
+        Generate the problem specification, templates, and testing harnesses for the coding problem:
+        Title: {title}
+        Difficulty: {difficulty}
+        Question ID: {question_id}
+
+        You must output a raw JSON object with the exact keys:
+        "description": "A clean, concise markdown description of the problem. You MUST format the examples exactly in LeetCode style. Each example should consist of a header line (e.g., '**Example 1:**') followed immediately by a code block containing Input, Output, and Explanation on separate lines. For example:\\n\\n**Example 1:**\\n```text\\nInput: nums = [2,7,11,15], target = 9\\nOutput: [0,1]\\nExplanation: Because nums[0] + nums[1] == 9, we return [0, 1].\\n```\\n\\nDo not format Input, Output, or Explanation inline or using individual inline backticks. They must be inside a single ```text code block for each example. Include Constraints and Complexity expectations clearly.",
+        "templates": {{
+            "python": "Boilerplate class/method template in Python (always use class Solution)",
+            "java": "Boilerplate class/method template in Java (always use class Solution)",
+            "cpp": "Boilerplate class/method template in C++ (always use class Solution)"
+        }},
+        "harnesses": {{
+            "python": "Testing code that we will APPEND to the user's Python code. It must instantiate Solution, run 3 distinct test cases, print the outcome of each test case in LeetCode style (e.g. 'Case 1: Passed' or 'Case 1: Failed\\nInput: ...\\nOutput: ...\\nExpected: ...'), and print 'SUCCESS' only if all 3 test cases pass.",
+            "java": "Main class testing code that we will APPEND to the user's Java code. It must contain 'public class Main {{ public static void main(String[] args) {{ ... }} }}' which instantiates Solution, runs 3 distinct test cases, prints the outcome of each in LeetCode style, and prints 'SUCCESS' only if all 3 test cases pass.",
+            "cpp": "int main() function testing code that we will APPEND to the user's C++ code. It must instantiate Solution, run 3 distinct test cases, print the outcome of each in LeetCode style, and print 'SUCCESS' only if all 3 test cases pass."
+        }},
+        "topics": ["list of 2-3 topics/tags for this DSA problem, e.g. Array, Hash Table"],
+        "companies": ["list of 3-4 top companies asking this problem, e.g. Amazon, Google, Microsoft"],
+        "hints": ["list of 2 helpful hints to guide the user towards solving this problem"]
+
+        Ensure that the keys inside 'templates' and 'harnesses' are strictly lowercase ('python', 'java', 'cpp'). Ensure that the class name is Solution, and function signatures match exactly.
+        Only output the raw JSON object.
+        """
+        try:
+            raw_response = await AIService.call_llm(
+                prompt,
+                user_id=user_id,
+                max_tokens=3000,
+                model="llama-3.3-70b-versatile"
+            )
+            spec = AIService._parse_json(raw_response)
+            
+            # Normalize dictionary keys to lowercase to prevent casing mismatches
+            templates = {k.lower(): v for k, v in spec.get("templates", {}).items()}
+            harnesses = {k.lower(): v for k, v in spec.get("harnesses", {}).items()}
+            
+            return {
+                "description": spec.get("description", "No description available."),
+                "templates": templates,
+                "harnesses": harnesses,
+                "topics": spec.get("topics", []),
+                "companies": spec.get("companies", []),
+                "hints": spec.get("hints", [])
+            }
+        except Exception as e:
+            logger.error(f"Failed to generate problem spec for {title}: {e}")
+            raise e
+

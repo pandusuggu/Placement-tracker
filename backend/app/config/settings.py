@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, alias="PORT")
     environment: str = Field(default="development", alias="ENVIRONMENT")
     admin_passcode: str = Field(default="admin123", alias="ADMIN_PASSCODE")
+    rapidapi_key: str = Field(default="", alias="RAPIDAPI_KEY")
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
