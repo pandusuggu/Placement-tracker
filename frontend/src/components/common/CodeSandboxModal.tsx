@@ -969,7 +969,7 @@ export const CodeSandboxModal: React.FC<CodeSandboxModalProps> = ({
                   {/* Variables listing */}
                   <div className="flex-1 overflow-y-auto space-y-3.5 pr-1">
                     {parseInputToParams(customInput, problem).length > 0 ? (
-                      parseInputToParams(customInput, problem).map((param, idx, allParams) => (
+                      parseInputToParams(customInput, problem).map((param, idx) => (
                         <div key={idx} className="space-y-1.5">
                           <label className="text-[11px] font-bold text-slate-400 block tracking-wide">
                             {param.name}
