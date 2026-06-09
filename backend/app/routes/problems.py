@@ -325,7 +325,7 @@ async def run_and_grade_code(
                 java_args = [to_java_literal(arg) for arg in parsed_args]
                 java_args_str = ", ".join(java_args)
                 custom_harness = (
-                    f"\n\nclass Main {{\n"
+                    f"\n\npublic class Main {{\n"
                     f"    static void printResult(boolean val) {{ System.out.print(val); }}\n"
                     f"    static void printResult(int val) {{ System.out.print(val); }}\n"
                     f"    static void printResult(String val) {{ System.out.print(val); }}\n"
@@ -424,10 +424,8 @@ async def run_and_grade_code(
                 jdoodle_lang = "cpp17"
                 version_idx = "1"
             
-            # Remove public from class Main for Java since JDoodle saves the file under a dynamic name
             script_code = combined_code
             if language == "java":
-                script_code = script_code.replace("public class Main", "class Main")
                 logger.info(f"Java script code sent to JDoodle:\n{script_code}")
 
             payload = {
