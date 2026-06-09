@@ -104,27 +104,72 @@ interface TestcaseParam {
 
 const getParamNames = (problem: ProblemData | null): string[] => {
   if (!problem || !problem.templates) return [];
+
+  // Try Python template first
   const pyTemplate = problem.templates.python;
   if (pyTemplate) {
     const match = pyTemplate.match(/def\s+[a-zA-Z0-9_]+\s*\(([^)]+)\)/);
     if (match) {
-      return match[1].split(',')
+      const params = match[1].split(',')
         .map(p => p.trim())
         .filter(p => p !== 'self' && p !== '')
         .map(p => {
           const colonIdx = p.indexOf(':');
           return colonIdx !== -1 ? p.substring(0, colonIdx).trim() : p;
         });
+      if (params.length > 0) return params;
     }
   }
+
+  // Fallback: try Java template
+  const javaTemplate = problem.templates.java;
+  if (javaTemplate) {
+    const match = javaTemplate.match(/public\s+\S+\s+[a-zA-Z0-9_]+\s*\(([^)]+)\)/);
+    if (match) {
+      const params = match[1].split(',')
+        .map(p => p.trim())
+        .filter(p => p !== '')
+        .map(p => {
+          // Java params look like "int[] nums" or "int[][] intervals" — take last word
+          const parts = p.trim().split(/\s+/);
+          return parts[parts.length - 1];
+        });
+      if (params.length > 0) return params;
+    }
+  }
+
+  // Fallback: try C++ template
+  const cppTemplate = problem.templates.cpp;
+  if (cppTemplate) {
+    const match = cppTemplate.match(/\w[\w<>\[\]*&\s]+\s+[a-zA-Z0-9_]+\s*\(([^)]+)\)/);
+    if (match) {
+      const params = match[1].split(',')
+        .map(p => p.trim())
+        .filter(p => p !== '')
+        .map(p => {
+          const parts = p.trim().split(/\s+/);
+          return parts[parts.length - 1].replace(/[&*]/, '');
+        });
+      if (params.length > 0) return params;
+    }
+  }
+
   return [];
 };
 
 const parseInputToParams = (inputStr: string, problem: ProblemData | null): TestcaseParam[] => {
-  if (!inputStr) return [];
-  const lines = inputStr.split('\n').map(l => l.trim()).filter(l => l !== '');
   const paramNames = getParamNames(problem);
-  
+
+  // If input is empty but we know the param names, return empty fields for each param
+  if (!inputStr || inputStr.trim() === '') {
+    if (paramNames.length > 0) {
+      return paramNames.map(name => ({ name, value: '', hasEqual: false }));
+    }
+    return [];
+  }
+
+  const lines = inputStr.split('\n').map(l => l.trim()).filter(l => l !== '');
+
   return lines.map((line, idx) => {
     if (line.includes('=') && !line.startsWith('[') && !line.startsWith('{') && !line.startsWith('"') && !line.startsWith("'")) {
       const eqIdx = line.indexOf('=');
