@@ -966,50 +966,58 @@ export const CodeSandboxModal: React.FC<CodeSandboxModalProps> = ({
                     </button>
                   </div>
 
-                  {/* Variables listing */}
-                  <div className="flex-1 overflow-y-auto space-y-3.5 pr-1">
+                  {/* Variables listing - LeetCode style */}
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 pt-1">
                     {parseInputToParams(customInput, problem).length > 0 ? (
                       parseInputToParams(customInput, problem).map((param, idx) => (
-                        <div key={idx} className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-slate-400 block tracking-wide">
-                            {param.name}
-                          </label>
-                          <textarea
-                            rows={Math.max(1, param.value.split('\n').length)}
-                            value={param.value}
-                            onChange={(e) => {
-                              const parsed = parseInputToParams(customInput, problem);
-                              const updated = [...parsed];
-                              updated[idx] = { ...updated[idx], value: e.target.value };
-                              const newStr = updated.map(p => p.hasEqual ? `${p.name} = ${p.value}` : p.value).join('\n');
-                              setCustomInput(newStr);
-                              const updatedCases = [...customCases];
-                              updatedCases[activeCaseIdx] = newStr;
-                              setCustomCases(updatedCases);
-                            }}
-                            className="w-full bg-[#131824] border border-slate-700/50 hover:border-slate-600 focus:border-primary/50 text-slate-200 font-mono text-[13px] rounded-lg px-3.5 py-2.5 transition-all outline-none resize-none leading-relaxed"
-                            placeholder={`Enter ${param.name}`}
-                          />
+                        <div key={idx} className="space-y-2">
+                          {/* Label: "paramName =" */}
+                          <div className="text-[12px] text-slate-400 font-normal">
+                            {param.name} =
+                          </div>
+                          {/* Dark input box */}
+                          <div className="relative rounded-lg overflow-hidden bg-[#1a1a1a] border border-transparent hover:border-slate-700/60 focus-within:border-slate-600/70 transition-all">
+                            <textarea
+                              rows={Math.max(1, param.value.split('\n').length)}
+                              value={param.value}
+                              onChange={(e) => {
+                                const parsed = parseInputToParams(customInput, problem);
+                                const updated = [...parsed];
+                                updated[idx] = { ...updated[idx], value: e.target.value };
+                                const newStr = updated.map(p => p.hasEqual ? `${p.name} = ${p.value}` : p.value).join('\n');
+                                setCustomInput(newStr);
+                                const updatedCases = [...customCases];
+                                updatedCases[activeCaseIdx] = newStr;
+                                setCustomCases(updatedCases);
+                              }}
+                              className="w-full bg-transparent text-[#5ccc8a] font-mono text-[13px] px-4 py-3 outline-none resize-none leading-relaxed placeholder-slate-600"
+                              placeholder={`Enter value...`}
+                              spellCheck={false}
+                            />
+                          </div>
                         </div>
                       ))
                     ) : (
-                      // Fallback: raw textarea when no params could be parsed (empty default_input or missing template)
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-400 block tracking-wide">
-                          stdin
-                        </label>
-                        <textarea
-                          rows={4}
-                          value={customInput}
-                          onChange={(e) => {
-                            setCustomInput(e.target.value);
-                            const updatedCases = [...customCases];
-                            updatedCases[activeCaseIdx] = e.target.value;
-                            setCustomCases(updatedCases);
-                          }}
-                          className="w-full bg-[#131824] border border-slate-700/50 hover:border-slate-600 focus:border-primary/50 text-slate-200 font-mono text-[13px] rounded-lg px-3.5 py-2.5 transition-all outline-none resize-y leading-relaxed min-h-[80px]"
-                          placeholder="Enter your test input here..."
-                        />
+                      // Fallback: raw textarea when no params could be parsed
+                      <div className="space-y-2">
+                        <div className="text-[12px] text-slate-400 font-normal">
+                          stdin =
+                        </div>
+                        <div className="relative rounded-lg overflow-hidden bg-[#1a1a1a] border border-transparent hover:border-slate-700/60 focus-within:border-slate-600/70 transition-all">
+                          <textarea
+                            rows={4}
+                            value={customInput}
+                            onChange={(e) => {
+                              setCustomInput(e.target.value);
+                              const updatedCases = [...customCases];
+                              updatedCases[activeCaseIdx] = e.target.value;
+                              setCustomCases(updatedCases);
+                            }}
+                            className="w-full bg-transparent text-[#5ccc8a] font-mono text-[13px] px-4 py-3 outline-none resize-y leading-relaxed placeholder-slate-600 min-h-[80px]"
+                            placeholder="Enter your test input here..."
+                            spellCheck={false}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
