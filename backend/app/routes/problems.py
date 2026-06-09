@@ -361,7 +361,7 @@ async def run_and_grade_code(
                     f"    }}\n"
                     f"}}\n"
                 )
-                cleaned_user_code = user_code.replace("public class Solution", "class Solution")
+                cleaned_user_code = re.sub(r'(public\s+)?class\s+[a-zA-Z0-9_]+', 'class Solution', user_code, count=1)
                 headers = "import java.util.*;\nimport java.io.*;\nimport java.math.*;\n\n"
                 combined_code = headers + cleaned_user_code + "\n\n" + custom_harness
                 language_id = 62  # Java (OpenJDK 13.0.1)
@@ -398,8 +398,7 @@ async def run_and_grade_code(
             combined_code = headers + user_code + "\n\n" + harness
             language_id = 54  # C++ (GCC 9.2.0)
         elif language == "java":
-            # Strip 'public ' from user's 'Solution' class to avoid duplicate/conflicting public class compile issues
-            cleaned_user_code = user_code.replace("public class Solution", "class Solution")
+            cleaned_user_code = re.sub(r'(public\s+)?class\s+[a-zA-Z0-9_]+', 'class Solution', user_code, count=1)
             headers = "import java.util.*;\nimport java.io.*;\nimport java.math.*;\n\n"
             combined_code = headers + cleaned_user_code + "\n\n" + harness
             language_id = 62  # Java (OpenJDK 13.0.1)
