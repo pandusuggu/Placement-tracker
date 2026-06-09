@@ -455,12 +455,12 @@ async def run_and_grade_code(
                         }
                         
                     res_json = response.json()
-                    if "error" in res_json:
+                    if res_json.get("error"):
                         logger.error(f"JDoodle API returned error: {res_json}")
                         return {
                             "passed": False,
                             "stdout": "",
-                            "stderr": res_json["error"],
+                            "stderr": str(res_json["error"]),
                             "compile_output": "",
                             "status_description": "Runtime Error"
                         }
