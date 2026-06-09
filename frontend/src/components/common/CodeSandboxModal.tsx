@@ -968,29 +968,50 @@ export const CodeSandboxModal: React.FC<CodeSandboxModalProps> = ({
 
                   {/* Variables listing */}
                   <div className="flex-1 overflow-y-auto space-y-3.5 pr-1">
-                    {parseInputToParams(customInput, problem).map((param, idx, allParams) => (
-                      <div key={idx} className="space-y-1.5">
+                    {parseInputToParams(customInput, problem).length > 0 ? (
+                      parseInputToParams(customInput, problem).map((param, idx, allParams) => (
+                        <div key={idx} className="space-y-1.5">
+                          <label className="text-[11px] font-bold text-slate-400 block tracking-wide">
+                            {param.name}
+                          </label>
+                          <textarea
+                            rows={Math.max(1, param.value.split('\n').length)}
+                            value={param.value}
+                            onChange={(e) => {
+                              const parsed = parseInputToParams(customInput, problem);
+                              const updated = [...parsed];
+                              updated[idx] = { ...updated[idx], value: e.target.value };
+                              const newStr = updated.map(p => p.hasEqual ? `${p.name} = ${p.value}` : p.value).join('\n');
+                              setCustomInput(newStr);
+                              const updatedCases = [...customCases];
+                              updatedCases[activeCaseIdx] = newStr;
+                              setCustomCases(updatedCases);
+                            }}
+                            className="w-full bg-[#131824] border border-slate-700/50 hover:border-slate-600 focus:border-primary/50 text-slate-200 font-mono text-[13px] rounded-lg px-3.5 py-2.5 transition-all outline-none resize-none leading-relaxed"
+                            placeholder={`Enter ${param.name}`}
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      // Fallback: raw textarea when no params could be parsed (empty default_input or missing template)
+                      <div className="space-y-1.5">
                         <label className="text-[11px] font-bold text-slate-400 block tracking-wide">
-                          {param.name}
+                          stdin
                         </label>
                         <textarea
-                          rows={Math.max(1, param.value.split('\n').length)}
-                          value={param.value}
+                          rows={4}
+                          value={customInput}
                           onChange={(e) => {
-                            const updated = [...allParams];
-                            updated[idx].value = e.target.value;
-                            const newStr = updated.map(p => p.hasEqual ? `${p.name} = ${p.value}` : p.value).join('\n');
-                            
-                            setCustomInput(newStr);
+                            setCustomInput(e.target.value);
                             const updatedCases = [...customCases];
-                            updatedCases[activeCaseIdx] = newStr;
+                            updatedCases[activeCaseIdx] = e.target.value;
                             setCustomCases(updatedCases);
                           }}
-                          className="w-full bg-[#131824] border border-slate-850 hover:border-slate-800 focus:border-primary/50 text-slate-200 font-mono text-[13px] rounded-lg px-3.5 py-2.5 transition-all outline-none resize-none leading-relaxed"
-                          placeholder={`Enter ${param.name}`}
+                          className="w-full bg-[#131824] border border-slate-700/50 hover:border-slate-600 focus:border-primary/50 text-slate-200 font-mono text-[13px] rounded-lg px-3.5 py-2.5 transition-all outline-none resize-y leading-relaxed min-h-[80px]"
+                          placeholder="Enter your test input here..."
                         />
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               )}
