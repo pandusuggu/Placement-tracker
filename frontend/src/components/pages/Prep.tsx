@@ -12,6 +12,7 @@ import { BLIND75_QUESTIONS } from './blind75Questions'
 import { DEFAULT_DSA_YOUTUBE_LINKS } from './dsaYoutubeDefaults'
 import { MarkdownRenderer } from '../common/MarkdownRenderer'
 import { useAuthStore } from '../../store/authStore'
+import { YouTubePlayerModal } from '../common/YouTubePlayerModal'
 
 interface Project {
   name: string
@@ -357,6 +358,8 @@ export const Prep: React.FC = () => {
   const [expandedCoreSubject, setExpandedCoreSubject] = useState<string | null>(null)
   const [expandedAptitudeTopic, setExpandedAptitudeTopic] = useState<string | null>(null)
   const [generatingAptitudeTopic, setGeneratingAptitudeTopic] = useState<string | null>(null)
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null)
+  const [activeVideoTitle, setActiveVideoTitle] = useState<string | null>(null)
 
   // Helper: check if a theoretical question is checked
   const isCSQuestionChecked = (subject: string, index: number) => {
@@ -1491,15 +1494,16 @@ export const Prep: React.FC = () => {
                                           {/* YouTube Link Toggle/View */}
                                           {youtubeLinks[q.id] ? (
                                             <div className="flex items-center">
-                                              <a 
-                                                href={youtubeLinks[q.id]}
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="p-1 hover:bg-red-500/10 rounded text-red-500 transition-all flex items-center justify-center"
+                                              <button
+                                                onClick={() => {
+                                                  setActiveVideoUrl(youtubeLinks[q.id])
+                                                  setActiveVideoTitle(q.title)
+                                                }}
+                                                className="p-1 hover:bg-red-500/10 rounded text-red-500 transition-all flex items-center justify-center cursor-pointer"
                                                 title="Watch YouTube Solution"
                                               >
                                                 <Youtube size={12} />
-                                              </a>
+                                              </button>
                                               <button
                                                 onClick={() => {
                                                   const newLink = prompt("Edit YouTube solution link for this question:", youtubeLinks[q.id])
@@ -1695,15 +1699,16 @@ export const Prep: React.FC = () => {
                                           {/* YouTube Link Toggle/View */}
                                           {youtubeLinks[q.id] ? (
                                             <div className="flex items-center">
-                                              <a 
-                                                href={youtubeLinks[q.id]}
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="p-1 hover:bg-red-500/10 rounded text-red-500 transition-all flex items-center justify-center"
+                                              <button
+                                                onClick={() => {
+                                                  setActiveVideoUrl(youtubeLinks[q.id])
+                                                  setActiveVideoTitle(q.title)
+                                                }}
+                                                className="p-1 hover:bg-red-500/10 rounded text-red-500 transition-all flex items-center justify-center cursor-pointer"
                                                 title="Watch YouTube Solution"
                                               >
                                                 <Youtube size={12} />
-                                              </a>
+                                              </button>
                                               <button
                                                 onClick={() => {
                                                   const newLink = prompt("Edit YouTube solution link for this question:", youtubeLinks[q.id])
@@ -2835,6 +2840,15 @@ export const Prep: React.FC = () => {
         )}
       </div>
 
+      <YouTubePlayerModal
+        isOpen={activeVideoUrl !== null}
+        videoUrl={activeVideoUrl}
+        title={activeVideoTitle}
+        onClose={() => {
+          setActiveVideoUrl(null)
+          setActiveVideoTitle(null)
+        }}
+      />
     </div>
   )
 }
