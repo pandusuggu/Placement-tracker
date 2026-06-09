@@ -429,6 +429,7 @@ async def run_and_grade_code(
             script_code = combined_code
             if language == "java":
                 script_code = script_code.replace("public class Main", "class Main")
+                logger.info(f"Java script code sent to JDoodle:\n{script_code}")
 
             payload = {
                 "clientId": settings.jdoodle_client_id,
