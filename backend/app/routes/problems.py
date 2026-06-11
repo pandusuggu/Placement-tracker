@@ -363,7 +363,7 @@ async def run_and_grade_code(
                 )
                 cleaned_user_code = re.sub(r'(public\s+)?class\s+[a-zA-Z0-9_]+', 'class Solution', user_code, count=1)
                 headers = "import java.util.*;\nimport java.io.*;\nimport java.math.*;\n\n"
-                combined_code = headers + cleaned_user_code + "\n\n" + custom_harness
+                combined_code = headers + custom_harness + "\n\n" + cleaned_user_code
                 language_id = 62  # Java (OpenJDK 13.0.1)
             else:
                 raise HTTPException(status_code=400, detail=f"Unsupported language '{language}'.")
@@ -400,7 +400,7 @@ async def run_and_grade_code(
         elif language == "java":
             cleaned_user_code = re.sub(r'(public\s+)?class\s+[a-zA-Z0-9_]+', 'class Solution', user_code, count=1)
             headers = "import java.util.*;\nimport java.io.*;\nimport java.math.*;\n\n"
-            combined_code = headers + cleaned_user_code + "\n\n" + harness
+            combined_code = headers + harness + "\n\n" + cleaned_user_code
             language_id = 62  # Java (OpenJDK 13.0.1)
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported language '{language}'.")
