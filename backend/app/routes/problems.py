@@ -413,7 +413,76 @@ async def run_and_grade_code(
     status_desc = "Unknown"
 
     if not settings.rapidapi_key:
-        if settings.jdoodle_client_id and settings.jdoodle_client_secret:
+        if settings.onlinecompiler_api_key:
+            logger.info(f"RAPIDAPI_KEY is not configured but OnlineCompiler API key is. Submitting {language} code to OnlineCompiler.io...")
+            compiler_map = {
+                "python": "python-3.14",
+                "java": "openjdk-25",
+                "cpp": "g++-15"
+            }
+            compiler_id = compiler_map.get(language, "python-3.14")
+            
+            script_code = combined_code
+            if language == "java":
+                logger.info(f"Java script code sent to OnlineCompiler.io:\n{script_code}")
+
+            payload = {
+                "compiler": compiler_id,
+                "code": script_code,
+                "input": ""
+            }
+            
+            headers = {
+                "Authorization": settings.onlinecompiler_api_key,
+                "Content-Type": "application/json"
+            }
+            
+            try:
+                async with httpx.AsyncClient(timeout=20.0) as client:
+                    response = await client.post(
+                        "https://api.onlinecompiler.io/api/run-code-sync/",
+                        headers=headers,
+                        json=payload
+                    )
+                    
+                    if response.status_code != 200:
+                        logger.error(f"OnlineCompiler.io API returned error status {response.status_code}: {response.text}")
+                        return {
+                            "passed": False,
+                            "stdout": "",
+                            "stderr": f"OnlineCompiler.io backend returned status {response.status_code}",
+                            "compile_output": response.text,
+                            "status_description": "Runtime Error"
+                        }
+                        
+                    res_json = response.json()
+                    output = res_json.get("output", "")
+                    error = res_json.get("error", "")
+                    exit_code = res_json.get("exit_code", 0)
+                    
+                    passed = "SUCCESS" in output
+                    status_desc = "Accepted" if passed else "Wrong Answer"
+                    
+                    if not passed or exit_code != 0 or error:
+                        status_desc = "Runtime/Compilation Error"
+                        
+                    return {
+                        "passed": passed,
+                        "stdout": output,
+                        "stderr": error,
+                        "compile_output": "",
+                        "status_description": status_desc
+                    }
+            except Exception as exc:
+                logger.exception(f"Failed calling OnlineCompiler.io API: {exc}")
+                return {
+                    "passed": False,
+                    "stdout": "",
+                    "stderr": f"OnlineCompiler.io API communication failure: {exc}",
+                    "compile_output": "",
+                    "status_description": "Runtime Error"
+                }
+        elif settings.jdoodle_client_id and settings.jdoodle_client_secret:
             logger.info(f"RAPIDAPI_KEY is not configured but JDoodle keys are. Submitting {language} code to JDoodle...")
             jdoodle_lang = "python3"
             version_idx = "4"
