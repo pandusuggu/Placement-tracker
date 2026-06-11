@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     jdoodle_client_id: str = Field(default="", alias="JDOODLE_CLIENT_ID")
     jdoodle_client_secret: str = Field(default="", alias="JDOODLE_CLIENT_SECRET")
     onlinecompiler_api_key: str = Field(default="", alias="ONLINECOMPILER_API_KEY")
+    onlinecompiler_api_keys: str = Field(default="", alias="ONLINECOMPILER_API_KEYS")
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),

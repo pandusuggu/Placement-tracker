@@ -23,6 +23,9 @@ logger = logging.getLogger("codepilot")
 
 router = APIRouter(prefix="/api/coding/problem", tags=["DSA Code Editor Sandbox"])
 
+# Stateful request counter for OnlineCompiler.io round-robin rotation
+online_compiler_request_counter = 0
+
 import ast
 import re
 
@@ -413,8 +416,15 @@ async def run_and_grade_code(
     status_desc = "Unknown"
 
     if not settings.rapidapi_key:
-        if settings.onlinecompiler_api_key:
-            logger.info(f"RAPIDAPI_KEY is not configured but OnlineCompiler API key is. Submitting {language} code to OnlineCompiler.io...")
+        # Build keys pool from ONLINECOMPILER_API_KEYS and ONLINECOMPILER_API_KEY
+        keys_pool = []
+        if settings.onlinecompiler_api_keys:
+            keys_pool = [k.strip() for k in settings.onlinecompiler_api_keys.split(",") if k.strip()]
+        if settings.onlinecompiler_api_key and settings.onlinecompiler_api_key not in keys_pool:
+            keys_pool.append(settings.onlinecompiler_api_key)
+
+        if keys_pool:
+            logger.info(f"RAPIDAPI_KEY is not configured but OnlineCompiler keys pool is available ({len(keys_pool)} keys).")
             compiler_map = {
                 "python": "python-3.14",
                 "java": "openjdk-25",
@@ -431,57 +441,90 @@ async def run_and_grade_code(
                 "code": script_code,
                 "input": ""
             }
+
+            global online_compiler_request_counter
+            start_idx = online_compiler_request_counter % len(keys_pool)
+            online_compiler_request_counter += 1
             
-            headers = {
-                "Authorization": settings.onlinecompiler_api_key,
-                "Content-Type": "application/json"
-            }
+            # Rotate keys to start from start_idx for round-robin
+            rotated_keys = keys_pool[start_idx:] + keys_pool[:start_idx]
             
-            try:
-                async with httpx.AsyncClient(timeout=20.0) as client:
-                    response = await client.post(
-                        "https://api.onlinecompiler.io/api/run-code-sync/",
-                        headers=headers,
-                        json=payload
-                    )
-                    
-                    if response.status_code != 200:
-                        logger.error(f"OnlineCompiler.io API returned error status {response.status_code}: {response.text}")
-                        return {
-                            "passed": False,
-                            "stdout": "",
-                            "stderr": f"OnlineCompiler.io backend returned status {response.status_code}",
-                            "compile_output": response.text,
-                            "status_description": "Runtime Error"
-                        }
-                        
-                    res_json = response.json()
-                    output = res_json.get("output", "")
-                    error = res_json.get("error", "")
-                    exit_code = res_json.get("exit_code", 0)
-                    
-                    passed = "SUCCESS" in output
-                    status_desc = "Accepted" if passed else "Wrong Answer"
-                    
-                    if not passed or exit_code != 0 or error:
-                        status_desc = "Runtime/Compilation Error"
-                        
-                    return {
-                        "passed": passed,
-                        "stdout": output,
-                        "stderr": error,
-                        "compile_output": "",
-                        "status_description": status_desc
-                    }
-            except Exception as exc:
-                logger.exception(f"Failed calling OnlineCompiler.io API: {exc}")
-                return {
-                    "passed": False,
-                    "stdout": "",
-                    "stderr": f"OnlineCompiler.io API communication failure: {exc}",
-                    "compile_output": "",
-                    "status_description": "Runtime Error"
+            last_exception = None
+            last_error_resp = None
+            
+            for idx, api_key in enumerate(rotated_keys, 1):
+                masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "invalid_key"
+                logger.info(f"Attempting OnlineCompiler.io submission using key {idx}/{len(rotated_keys)} ({masked_key})...")
+                
+                headers = {
+                    "Authorization": api_key,
+                    "Content-Type": "application/json"
                 }
+                
+                try:
+                    async with httpx.AsyncClient(timeout=20.0) as client:
+                        response = await client.post(
+                            "https://api.onlinecompiler.io/api/run-code-sync/",
+                            headers=headers,
+                            json=payload
+                        )
+                        
+                        if response.status_code != 200:
+                            logger.error(f"OnlineCompiler.io API returned error status {response.status_code} for key ({masked_key}): {response.text}")
+                            last_error_resp = {
+                                "passed": False,
+                                "stdout": "",
+                                "stderr": f"OnlineCompiler.io backend returned status {response.status_code}",
+                                "compile_output": response.text,
+                                "status_description": "Runtime Error"
+                            }
+                            continue
+                            
+                        res_json = response.json()
+                        output = res_json.get("output", "")
+                        error = res_json.get("error", "")
+                        exit_code = res_json.get("exit_code", 0)
+                        status = res_json.get("status", "")
+                        
+                        if status == "error" and "internal error" in error.lower():
+                            logger.warning(f"OnlineCompiler.io internal error for key ({masked_key}): {error}. Trying next key...")
+                            last_error_resp = {
+                                "passed": False,
+                                "stdout": "",
+                                "stderr": error,
+                                "compile_output": "",
+                                "status_description": "Runtime Error"
+                            }
+                            continue
+                            
+                        passed = "SUCCESS" in output
+                        status_desc = "Accepted" if passed else "Wrong Answer"
+                        
+                        if not passed or exit_code != 0 or error:
+                            status_desc = "Runtime/Compilation Error"
+                            
+                        return {
+                            "passed": passed,
+                            "stdout": output,
+                            "stderr": error,
+                            "compile_output": "",
+                            "status_description": status_desc
+                        }
+                except Exception as exc:
+                    logger.exception(f"Failed calling OnlineCompiler.io API with key ({masked_key}): {exc}")
+                    last_exception = exc
+                    continue
+            
+            # If we reached here, all keys failed
+            if last_error_resp:
+                return last_error_resp
+            return {
+                "passed": False,
+                "stdout": "",
+                "stderr": f"All configured OnlineCompiler.io keys failed. Last exception: {last_exception}",
+                "compile_output": "",
+                "status_description": "Runtime Error"
+            }
         elif settings.jdoodle_client_id and settings.jdoodle_client_secret:
             logger.info(f"RAPIDAPI_KEY is not configured but JDoodle keys are. Submitting {language} code to JDoodle...")
             jdoodle_lang = "python3"
