@@ -11,6 +11,7 @@ logger = logging.getLogger("codepilot")
 # Stateful counters for LLM API key round-robin rotation
 groq_request_counter = 0
 gemini_request_counter = 0
+llm_provider_counter = 0
 
 
 # Try to configure Gemini SDK if key is present
@@ -38,6 +39,118 @@ class AIService:
         return json.loads(text)
 
     @staticmethod
+    async def _call_groq(
+        model: str,
+        messages: List[Dict[str, str]],
+        temperature: float,
+        max_tokens: int,
+        response_format: Optional[dict]
+    ) -> Optional[str]:
+        keys_pool = []
+        if settings.groq_api_keys:
+            keys_pool = [k.strip() for k in settings.groq_api_keys.split(",") if k.strip()]
+        if settings.groq_api_key and settings.groq_api_key not in keys_pool:
+            keys_pool.append(settings.groq_api_key)
+
+        if not keys_pool:
+            return None
+
+        global groq_request_counter
+        start_idx = groq_request_counter % len(keys_pool)
+        groq_request_counter += 1
+        
+        rotated_keys = keys_pool[start_idx:] + keys_pool[:start_idx]
+
+        for idx, api_key in enumerate(rotated_keys, 1):
+            masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "invalid_key"
+            try:
+                logger.info(f"Attempting Groq API call using key {idx}/{len(rotated_keys)} ({masked_key})...")
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "model": model,
+                    "messages": messages,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens
+                }
+                if response_format:
+                    payload["response_format"] = response_format
+
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers=headers,
+                        json=payload
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        result_text = data["choices"][0]["message"]["content"].strip()
+                        logger.info(f"Groq API call succeeded using key ({masked_key}).")
+                        return result_text
+                    elif response.status_code == 429:
+                        logger.warning(f"Groq API key ({masked_key}) was rate limited (429). Trying next key...")
+                    else:
+                        logger.error(f"Groq API returned error status {response.status_code} for key ({masked_key}): {response.text}")
+            except Exception as e:
+                logger.exception(f"Groq API call failed using key ({masked_key}). Trying next key...")
+        return None
+
+    @staticmethod
+    async def _call_gemini(
+        prompt: Optional[str],
+        messages: Optional[List[Dict[str, str]]]
+    ) -> Optional[str]:
+        gemini_keys_pool = []
+        if settings.gemini_api_keys:
+            gemini_keys_pool = [k.strip() for k in settings.gemini_api_keys.split(",") if k.strip()]
+        if settings.gemini_api_key and settings.gemini_api_key not in gemini_keys_pool:
+            gemini_keys_pool.append(settings.gemini_api_key)
+
+        if not gemini_keys_pool:
+            return None
+
+        import google.generativeai as genai
+        global gemini_request_counter
+        start_idx = gemini_request_counter % len(gemini_keys_pool)
+        gemini_request_counter += 1
+        
+        rotated_gemini = gemini_keys_pool[start_idx:] + gemini_keys_pool[:start_idx]
+        
+        for idx, api_key in enumerate(rotated_gemini, 1):
+            masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "invalid_key"
+            try:
+                logger.info(f"Attempting Gemini API call using key {idx}/{len(rotated_gemini)} ({masked_key})...")
+                genai.configure(api_key=api_key)
+                
+                if messages:
+                    gemini_contents = []
+                    system_instruction = None
+                    for msg in messages:
+                        if msg["role"] == "system":
+                            system_instruction = msg["content"]
+                        else:
+                            role = "user" if msg["role"] == "user" else "model"
+                            gemini_contents.append({"role": role, "parts": [msg["content"]]})
+                    
+                    if system_instruction:
+                        gemini_model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
+                    else:
+                        gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+                    response = gemini_model.generate_content(gemini_contents)
+                else:
+                    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+                    response = gemini_model.generate_content(prompt)
+                
+                result_text = response.text.strip()
+                logger.info(f"Gemini API call succeeded using key ({masked_key}).")
+                return result_text
+            except Exception as e:
+                logger.exception(f"Gemini API invocation failed using key ({masked_key}). Trying next key...")
+        return None
+
+    @staticmethod
     async def call_llm(
         prompt: Optional[str] = None,
         messages: Optional[List[Dict[str, str]]] = None,
@@ -49,24 +162,11 @@ class AIService:
         model: str = "llama-3.1-8b-instant"
     ) -> str:
         """
-        Sends prompt or custom messages to Groq API if configured (supports key rotation & failover), otherwise falls back to Gemini API.
+        Sends prompt or custom messages to Groq API and/or Gemini API in a round-robin rotation league with failover.
         Throws ValueError if no active API providers are available.
         """
         if not prompt and not messages:
             raise ValueError("Either prompt or messages must be provided.")
-
-        # Parse all available keys from settings
-        keys_pool = []
-        if settings.groq_api_keys:
-            keys_pool = [k.strip() for k in settings.groq_api_keys.split(",") if k.strip()]
-        if settings.groq_api_key and settings.groq_api_key not in keys_pool:
-            keys_pool.append(settings.groq_api_key)
-
-        gemini_keys_pool = []
-        if settings.gemini_api_keys:
-            gemini_keys_pool = [k.strip() for k in settings.gemini_api_keys.split(",") if k.strip()]
-        if settings.gemini_api_key and settings.gemini_api_key not in gemini_keys_pool:
-            gemini_keys_pool.append(settings.gemini_api_key)
 
         # Build messages and response_format if not provided
         if not messages:
@@ -83,89 +183,33 @@ class AIService:
             if response_format is None:
                 response_format = {"type": "json_object"}
 
+        # Check availability of keys for Groq and Gemini
+        has_groq = bool(settings.groq_api_key or settings.groq_api_keys)
+        has_gemini = bool(settings.gemini_api_key or settings.gemini_api_keys)
+
         result_text = None
-        if keys_pool:
-            global groq_request_counter
-            start_idx = groq_request_counter % len(keys_pool)
-            groq_request_counter += 1
+        if has_groq and has_gemini:
+            global llm_provider_counter
+            # Alternates starting provider on each request:
+            # request 0 -> Groq first, request 1 -> Gemini first
+            provider_order = ["groq", "gemini"] if llm_provider_counter % 2 == 0 else ["gemini", "groq"]
+            llm_provider_counter += 1
             
-            rotated_keys = keys_pool[start_idx:] + keys_pool[:start_idx]
-
-            for idx, api_key in enumerate(rotated_keys, 1):
-                masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "invalid_key"
-                try:
-                    logger.info(f"Attempting Groq API call using key {idx}/{len(rotated_keys)} ({masked_key})...")
-                    headers = {
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json"
-                    }
-                    payload = {
-                        "model": model,
-                        "messages": messages,
-                        "temperature": temperature,
-                        "max_tokens": max_tokens
-                    }
-                    if response_format:
-                        payload["response_format"] = response_format
-
-                    async with httpx.AsyncClient(timeout=30.0) as client:
-                        response = await client.post(
-                            "https://api.groq.com/openai/v1/chat/completions",
-                            headers=headers,
-                            json=payload
-                        )
-                        if response.status_code == 200:
-                            data = response.json()
-                            result_text = data["choices"][0]["message"]["content"].strip()
-                            logger.info(f"Groq API call succeeded using key ({masked_key}).")
-                            break
-                        elif response.status_code == 429:
-                            logger.warning(f"Groq API key ({masked_key}) was rate limited (429). Trying next key...")
-                        else:
-                            logger.error(f"Groq API returned error status {response.status_code} for key ({masked_key}): {response.text}")
-                except Exception as e:
-                    logger.exception(f"Groq API call failed using key ({masked_key}). Trying next key...")
-
-        if not result_text and gemini_keys_pool:
-            import google.generativeai as genai
-            global gemini_request_counter
-            start_idx = gemini_request_counter % len(gemini_keys_pool)
-            gemini_request_counter += 1
-            
-            rotated_gemini = gemini_keys_pool[start_idx:] + gemini_keys_pool[:start_idx]
-            
-            for idx, api_key in enumerate(rotated_gemini, 1):
-                masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "invalid_key"
-                try:
-                    logger.info(f"Attempting Gemini API call using key {idx}/{len(rotated_gemini)} ({masked_key})...")
-                    genai.configure(api_key=api_key)
-                    
-                    if messages:
-                        # Convert OpenAI message format to Gemini format
-                        gemini_contents = []
-                        system_instruction = None
-                        for msg in messages:
-                            if msg["role"] == "system":
-                                system_instruction = msg["content"]
-                            else:
-                                role = "user" if msg["role"] == "user" else "model"
-                                gemini_contents.append({"role": role, "parts": [msg["content"]]})
-                        
-                        if system_instruction:
-                            gemini_model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
-                        else:
-                            gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-                        response = gemini_model.generate_content(gemini_contents)
-                    else:
-                        gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-                        response = gemini_model.generate_content(prompt)
-                    
-                    result_text = response.text.strip()
-                    logger.info(f"Gemini API call succeeded using key ({masked_key}).")
+            logger.info(f"Both LLM providers configured. Round-robin order: {provider_order}")
+            for provider in provider_order:
+                if provider == "groq":
+                    result_text = await AIService._call_groq(model, messages, temperature, max_tokens, response_format)
+                else:
+                    result_text = await AIService._call_gemini(prompt, messages)
+                if result_text:
                     break
-                except Exception as e:
-                    logger.exception(f"Gemini API invocation failed using key ({masked_key}). Trying next key...")
-                
+        elif has_groq:
+            logger.info("Only Groq LLM provider is configured.")
+            result_text = await AIService._call_groq(model, messages, temperature, max_tokens, response_format)
+        elif has_gemini:
+            logger.info("Only Gemini LLM provider is configured.")
+            result_text = await AIService._call_gemini(prompt, messages)
+
         if not result_text:
             raise ValueError("No active AI provider keys configured in settings or all API calls failed.")
 
