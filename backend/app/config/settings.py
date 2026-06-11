@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     mongodb_uri: str = Field(default="mongodb://localhost:27017/codepilot", alias="MONGODB_URI")
     jwt_secret: str = Field(default="supersecretjwtkeyforcodepilotai2026", alias="JWT_SECRET")
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
+    gemini_api_keys: str = Field(default="", alias="GEMINI_API_KEYS")
     groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
     groq_api_keys: str = Field(default="", alias="GROQ_API_KEYS")
     port: int = Field(default=8000, alias="PORT")

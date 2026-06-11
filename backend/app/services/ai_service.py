@@ -8,16 +8,16 @@ from app.config.settings import settings
 
 logger = logging.getLogger("codepilot")
 
+# Stateful counters for LLM API key round-robin rotation
+groq_request_counter = 0
+gemini_request_counter = 0
+
+
 # Try to configure Gemini SDK if key is present
 has_gemini = False
-if settings.gemini_api_key:
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.gemini_api_key)
-        has_gemini = True
-        logger.info("Gemini API key configured successfully.")
-    except Exception as e:
-        logger.error(f"Error configuring Gemini: {e}")
+if settings.gemini_api_key or settings.gemini_api_keys:
+    has_gemini = True
+    logger.info("Gemini API is available for execution.")
 
 class AIService:
     @staticmethod
@@ -62,6 +62,12 @@ class AIService:
         if settings.groq_api_key and settings.groq_api_key not in keys_pool:
             keys_pool.append(settings.groq_api_key)
 
+        gemini_keys_pool = []
+        if settings.gemini_api_keys:
+            gemini_keys_pool = [k.strip() for k in settings.gemini_api_keys.split(",") if k.strip()]
+        if settings.gemini_api_key and settings.gemini_api_key not in gemini_keys_pool:
+            gemini_keys_pool.append(settings.gemini_api_key)
+
         # Build messages and response_format if not provided
         if not messages:
             messages = [
@@ -79,14 +85,16 @@ class AIService:
 
         result_text = None
         if keys_pool:
-            import random
-            shuffled_keys = keys_pool.copy()
-            random.shuffle(shuffled_keys)
+            global groq_request_counter
+            start_idx = groq_request_counter % len(keys_pool)
+            groq_request_counter += 1
+            
+            rotated_keys = keys_pool[start_idx:] + keys_pool[:start_idx]
 
-            for idx, api_key in enumerate(shuffled_keys, 1):
+            for idx, api_key in enumerate(rotated_keys, 1):
                 masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "invalid_key"
                 try:
-                    logger.info(f"Attempting Groq API call using key {idx}/{len(shuffled_keys)} ({masked_key})...")
+                    logger.info(f"Attempting Groq API call using key {idx}/{len(rotated_keys)} ({masked_key})...")
                     headers = {
                         "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json"
@@ -118,31 +126,45 @@ class AIService:
                 except Exception as e:
                     logger.exception(f"Groq API call failed using key ({masked_key}). Trying next key...")
 
-        if not result_text and has_gemini:
-            try:
-                import google.generativeai as genai
-                if messages:
-                    # Convert OpenAI message format to Gemini format
-                    gemini_contents = []
-                    system_instruction = None
-                    for msg in messages:
-                        if msg["role"] == "system":
-                            system_instruction = msg["content"]
-                        else:
-                            role = "user" if msg["role"] == "user" else "model"
-                            gemini_contents.append({"role": role, "parts": [msg["content"]]})
+        if not result_text and gemini_keys_pool:
+            import google.generativeai as genai
+            global gemini_request_counter
+            start_idx = gemini_request_counter % len(gemini_keys_pool)
+            gemini_request_counter += 1
+            
+            rotated_gemini = gemini_keys_pool[start_idx:] + gemini_keys_pool[:start_idx]
+            
+            for idx, api_key in enumerate(rotated_gemini, 1):
+                masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "invalid_key"
+                try:
+                    logger.info(f"Attempting Gemini API call using key {idx}/{len(rotated_gemini)} ({masked_key})...")
+                    genai.configure(api_key=api_key)
                     
-                    if system_instruction:
-                        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
+                    if messages:
+                        # Convert OpenAI message format to Gemini format
+                        gemini_contents = []
+                        system_instruction = None
+                        for msg in messages:
+                            if msg["role"] == "system":
+                                system_instruction = msg["content"]
+                            else:
+                                role = "user" if msg["role"] == "user" else "model"
+                                gemini_contents.append({"role": role, "parts": [msg["content"]]})
+                        
+                        if system_instruction:
+                            gemini_model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
+                        else:
+                            gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+                        response = gemini_model.generate_content(gemini_contents)
                     else:
-                        model = genai.GenerativeModel("gemini-1.5-flash")
-                    response = model.generate_content(gemini_contents)
-                else:
-                    model = genai.GenerativeModel("gemini-1.5-flash")
-                    response = model.generate_content(prompt)
-                result_text = response.text.strip()
-            except Exception as e:
-                logger.exception("Gemini API invocation failed.")
+                        gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+                        response = gemini_model.generate_content(prompt)
+                    
+                    result_text = response.text.strip()
+                    logger.info(f"Gemini API call succeeded using key ({masked_key}).")
+                    break
+                except Exception as e:
+                    logger.exception(f"Gemini API invocation failed using key ({masked_key}). Trying next key...")
                 
         if not result_text:
             raise ValueError("No active AI provider keys configured in settings or all API calls failed.")
