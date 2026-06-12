@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     jdoodle_client_id: str = Field(default="", alias="JDOODLE_CLIENT_ID")
     jdoodle_client_secret: str = Field(default="", alias="JDOODLE_CLIENT_SECRET")
     onlinecompiler_api_key: str = Field(default="", alias="ONLINECOMPILER_API_KEY")
+    ai_rate_limit_minute: int = Field(default=10, alias="AI_RATE_LIMIT_MINUTE")
+    ai_rate_limit_daily: int = Field(default=200, alias="AI_RATE_LIMIT_DAILY")
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
